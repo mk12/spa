@@ -43,16 +43,121 @@ const char* help = "\n"
 
 int Symbol::_count = 0;
 
+std::ostream& operator<<(std::ostream& stream, const Object& obj) {
+	return obj.print(stream);
+}
+
+Number* ConcreteNumber::cloneSelf() const {
+	return new ConcreteNumber(_x);
+}
+
+Number* CompoundNumber::cloneSelf() const {
+	return new CompoundNumber(_type, _a->cloneSelf(), _b->cloneSelf());
+}
+
+std::ostream& CompoundNumber::print(std::ostream& s) const {
+	s << '(';
+	_a->print(s);
+	switch (_type) {
+	case ADD: s << " + "; break;
+	case SUB: s << " - "; break;
+	case MUL: s << " * "; break;
+	case DIV: s << " / "; break;
+	}
+	_b->print(s);
+	return s << ')';
+}
+
+bool ConcreteSet::contains(Object *obj) const {
+	for (Object* x: _items) {
+		if (*x == *obj) {
+			return true;
+		}
+	}
+	return false;
+}
+
+Set* ConcreteSet::cloneSelf() const {
+	std::vector<Object*> v;
+	v.reserve(_items.size());
+	for (Object *obj: _items) {
+		v.push_back(obj->clone());
+	}
+	return new ConcreteSet(v);
+}
+
+ConcreteSet::~ConcreteSet() {
+	for (Object *obj: _items) {
+		delete obj;
+	}
+}
+
+std::ostream& ConcreteSet::print(std::ostream& s) const {
+	s << '{';
+	bool first = true;
+	for (const Object* obj: _items) {
+		if (first) {
+			first = false;
+		} else {
+			s << ", ";
+		}
+		s << *obj;
+	}
+	return s << '}';
+}
+
+bool CompoundSet::contains(Object *obj) const {
+	switch (_type) {
+	case UNION: return _a->contains(obj) || _b->contains(obj);
+	case INTERSECT: return _a->contains(obj) && _b->contains(obj);
+	case DIFF: return _a->contais(obj) && !_b->contains(obj);
+	}
+}
+
+Set* CompoundSet::cloneSelf() const {
+	return new CompoundSet(_type, _a->cloneSelf(), _b->cloneSelf());
+}
+
+std::ostream& CompoundSet::print(std::ostream& s) const {
+	_a->print(s);
+	switch (_type) {
+	case UNION: s << " (union) "; break;
+	case INTERSECT: s << " (intersect) "; break;
+	case DIFF: s << " \\ "; break;
+	}
+	return _b->print(s);
+}
+
+bool InfiniteSet::contains(Object *obj) const {
+	return Sentence::FALSE;
+}
+
+Symbol* Symbol::cloneSelf() const {
+	return new Symbol(_c, _id);
+}
+
 // =============================================================================
 //            Sentences
 // =============================================================================
 
-Sentence::Value Sentence::evaluate() {
+Sentence* Logical::clone() const {
+	return new Logical(_type, _a->clone(), _b->clone());
+}
+
+Sentence* Relation::clone() const {
+	return new Relation(_type, _a->clone(), _b->clone());
+}
+
+Sentence* Quantified::clone() const {
+	return new Quantified(_type, _var, _body->clone());
+}
+
+Sentence::Value Sentence::evaluate() const {
 	Value v = value();
 	return (v == MU) ? MU : (Value)(v == _want);
 }
 
-Sentence::Value Logical::value() {
+Sentence::Value Logical::value() const {
 	Value va = _a->value();
 	Value vb = _b->value();
 	if (va == MU || vb == MU) {
@@ -115,7 +220,32 @@ void Logical::negate() {
 	}
 }
 
-Sentence::Value Quantified::value() {
+Sentence::Value Relation::value() const {
+	return Sentence::FALSE;
+}
+
+Object* Relation::expandSubset() {
+	assert(_type == SUBSET);
+	Symbol *x = new Symbol('x');
+	return new Quantified(
+		Quantified::FORALL,
+		x,
+		_a->clone(),
+		new Relation(Relation::IN, x->cloneSelf(), _b->clone())
+	);
+}
+
+void Relation::negate() {
+	switch (_type) {
+	case SUBSET:
+		expandSubset();
+		negate();
+	default:
+		Sentence::negate();
+	}
+}
+
+Sentence::Value Quantified::value() const {
 	return _body->value();
 }
 
@@ -128,11 +258,17 @@ void Quantified::negate() {
 //            Provers
 // =============================================================================
 
+TheoremProver::~TheoremProver() {
+	if (_theorem != nullptr) {
+		delete _theorem;
+	}
+}
+
 void TheoremProver::dispatch(const std::vector<std::string>& tokens) {
 	std::string cmd = tokens[0];
 	if (cmd == "thm") {
 		if (_theorem == nullptr) {
-			// theorem = Sentence.parse(tokens);
+			_theorem = Sentence::parse(tokens);
 		} else {
 			std::cout << _theorem;
 		}
@@ -146,8 +282,18 @@ void TheoremProver::dispatch(const std::vector<std::string>& tokens) {
 }
 
 // =============================================================================
-//            Tokenize
+//            Parsing
 // =============================================================================
+
+Sentence* Sentence::parse(const std::vector<std::string>& tokens) {
+	bool first = true;
+	for (const string& tok: tokens) {
+		if (first) {
+			first = false;
+			continue;
+		}
+	}
+}
 
 // Returns a vector of string tokens by splitting on whitespace.
 // TODO: Make this more efficient.
@@ -177,7 +323,7 @@ std::vector<std::string> tokenize(char* line) {
 
 // Executes the interactive proof assistant loop. Uses the GNU Readline library
 // for user input.
-int main() {
+int lmain() {
 	char* line;
 	TheoremProver tp;
 	std::cout << strings::header << std::endl;
@@ -200,5 +346,32 @@ int main() {
 		}
 		free(line);
 	}
+	return 0;
+}
+
+int main() {
+	Object* obj = new CompoundNumber(
+		CompoundNumber::MUL,
+		new CompoundNumber(
+			CompoundNumber::ADD,
+			new ConcreteNumber(1),
+			new ConcreteNumber(1)
+		),
+		new CompoundNumber(
+			CompoundNumber::DIV,
+			new ConcreteNumber(1),
+			new ConcreteNumber(1)
+		)
+	);
+	std::vector<Object*> v;
+	v.push_back(obj->clone());
+	v.push_back(new ConcreteNumber(6));
+	v.push_back(new ConcreteNumber(3));
+	Object *s = new ConcreteSet(v);
+	std::cout << *obj << std::endl;
+	// obj2->_type = CompoundNumber::SUB;
+	std::cout << *s << std::endl;
+	delete obj;
+	delete s;
 	return 0;
 }

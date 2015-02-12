@@ -3,6 +3,7 @@
 #ifndef SPA_H
 #define SPA_H
 
+#include <ostream>
 #include <stack>
 #include <string>
 #include <vector>
@@ -11,65 +12,100 @@
 //            Objects
 // =============================================================================
 
-// An object is any mathematical object that sentences can talk about.
 class Object {
 public:
 	virtual ~Object() {}
+	virtual Object* clone() const = 0;
+	virtual std::ostream& print(std::ostream& stream) const = 0;
+	friend std::ostream& operator<<(std::ostream& stream, const Object& obj);
 };
 
-class Number : Object {
+class Number : public virtual Object {
 public:
 	virtual ~Number() {}
+	virtual Object* clone() const { return cloneSelf(); }
+	virtual Number* cloneSelf() const = 0;
 };
 
-class ConcreteNumber : Number {
+class ConcreteNumber : public Number {
 public:
 	ConcreteNumber(int x) : _x(x) {}
+	virtual Number* cloneSelf() const;
+	virtual std::ostream& print(std::ostream& s) const { return s << _x; }
+	bool operator==(const ConcreteNumber& n) const { return _x == n._x; }
+	bool operator!=(const ConcreteNumber& n) const { return _x != n._x; }
 private:
 	int _x;
 };
 
-class CompoundNumber : Number {
+class CompoundNumber : public Number {
 public:
 	enum Type { ADD, SUB, MUL, DIV };
 	CompoundNumber(Type t, Number* a, Number* b) : _type(t), _a(a), _b(b) {}
-	~CompoundNumber() { delete _a; delete _b; }
+	virtual ~CompoundNumber() { delete _a; delete _b; }
+	virtual Number* cloneSelf() const;
+	virtual std::ostream& print(std::ostream& s) const;
 private:
 	Type _type;
 	Number* _a;
 	Number* _b;
 };
 
-// reals, integers... just use predefined symbols?
-class Set {
+class Set : public virtual Object {
 public:
 	virtual ~Set() {}
+	virtual Object* clone() const { return cloneSelf(); }
+	virtual Set* cloneSelf() const = 0;
+	virtual bool contains(Object* obj) const;
 };
 
-class ConcreteSet : Set {
+class ConcreteSet : public Set {
 public:
-	~ConcreteSet() {}
+	virtual ~ConcreteSet();
+	ConcreteSet(std::vector<Object*> items) : _items(items) {}
+	virtual Set* cloneSelf() const;
+	virtual std::ostream& print(std::ostream& s) const;
+	virtual bool contains(Object* obj) const;
+private:
+	std::vector<Object*> _items;
 };
 
-class CompoundSet : Set {
+class InfiniteSet : public Set {
 public:
-	enum Type { UNION, INTERSECTION, DIFFERENCE };
+	enum Type { N, Z, Q, R, S };
+	InfiniteSet(Type t) : _type(t) {}
+	virtual bool contains(Object* obj) const;
+private:
+	Type _type;
+};
+
+class CompoundSet : public Set {
+public:
+	enum Type { UNION, INTERSECT, DIFF };
 	CompoundSet(Type t, Set* a, Set* b) : _type(t), _a(a), _b(b) {}
-	~CompoundSet() { delete _a; delete _b; }
+	virtual ~CompoundSet() { delete _a; delete _b; }
+	virtual Set* cloneSelf() const;
+	virtual std::ostream& print(std::ostream& s) const;
+	virtual bool contains(Object* obj) const;
 private:
 	Type _type;
 	Set* _a;
 	Set* _b;
 };
 
-// A symbol is a variable that represents a concrete object.
-class Symbol : Number, Set {
+class Symbol : public Number, public Set {
 public:
-	Symbol(std::string s) : _s(s) { _id = _count++; }
+	Symbol(char c) : _c(c) { _id = _count++; }
+	Symbol(char c, unsigned int id) : _c(c),  _id(id) {}
+	virtual Object* clone() const { return cloneSelf(); }
+	Symbol* cloneSelf() const;
+	virtual std::ostream& print(std::ostream& s) const { return s << _c; }
+	bool operator==(const Symbol& s) const { return _id == s._id; }
+	bool operator!=(const Symbol& s) const { return _id != s._id; }
 private:
+	char _c;
+	unsigned int _id;
 	static int _count;
-	int _id;
-	std::string _s;
 };
 
 // =============================================================================
@@ -83,27 +119,28 @@ class Sentence {
 public:
 	enum Value { FALSE = false, TRUE = true, MU };
 	virtual ~Sentence() {}
+	virtual Sentence* clone() const = 0;
 	// virtual ??? options() = 0;
-	virtual Value value() = 0;
-	Value evaluate();
+	virtual Value value() const = 0;
+	Value evaluate() const;
 	virtual void negate() { _want = !_want; }
+	static Sentence* parse(const std::vector<std::string>& tokens);
 private:
 	bool _want = true;
 };
 
 // Logical sentences are the building blocks of the propositional calculus:
 // logical and, logical or, implication, and logical equivalence.
-class Logical : Sentence {
+class Logical : public Sentence {
 public:
 	enum Type { AND, OR, IMPLIES, IFF };
 	Logical(Type t, Sentence* a, Sentence* b) : _type(t), _a(a), _b(b) {}
-	// TODO: use deep copy instead
-	Logical(const Logical& s) : _type(s._type), _a(s._a), _b(s._b) {}
-	~Logical() { delete _a; delete _b; }
+	virtual ~Logical() { delete _a; delete _b; }
+	virtual Sentence* clone() const;
 	void contrapositive();
 	void converse();
 	void expandIff();
-	virtual Value value();
+	virtual Value value() const;
 	virtual void negate();
 private:
 	Type _type;
@@ -112,11 +149,14 @@ private:
 };
 
 // A relation is a sentence about two objects.
-class Relation : Sentence {
+class Relation : public Sentence {
 public:
 	enum Type { EQ, LT, IN, SUBSET };
 	Relation(Type t, Object* a, Object* b) : _type(t), _a(a), _b(b) {}
-	~Relation() { delete _a; delete _b; }
+	virtual ~Relation() { delete _a; delete _b; }
+	Object* expandSubset();
+	virtual Sentence* clone() const;
+	virtual Value value() const;
 	virtual void negate();
 private:
 	Type _type;
@@ -127,18 +167,20 @@ private:
 // A quantified statement uses either the universal quantifier (for all) or the
 // existential quantifier (there exists). It binds a variable in its body, an
 // open sentence, thereby creating a concrete sentence.
-class Quantified : Sentence {
+class Quantified : public Sentence {
 public:
 	enum Type { FORALL = 0, EXISTS = 1 };
-	Quantified(Type t, Symbol x, Sentence* b) : _type(t), _x(x), _body(b) {}
-	Quantified(Type t, Symbol x, Object* domain, Sentence* body);
-	~Quantified() { delete _body; }
+	Quantified(Type t, Symbol var, Sentence* body)
+		: _type(t), _var(var), _body(body) {}
+	Quantified(Type t, Symbol var, Set* domain, Sentence* body);
+	virtual ~Quantified() { delete _body; }
+	virtual Sentence* clone() const;
 	void makeUnique();
-	virtual Value value();
+	virtual Value value() const;
 	virtual void negate();
 private:
 	Type _type;
-	Symbol _x;
+	Symbol _var;
 	Sentence* _body;
 };
 
@@ -149,12 +191,14 @@ private:
 class GoalProver {
 public:
 private:
-	Sentence* _goal;
+	// Sentence* _goal;
 	std::vector<Sentence*> _givens;
+	std::vector<Sentence*> _goals;
 };
 
 class TheoremProver {
 public:
+	~TheoremProver();
 	void dispatch(const std::vector<std::string>& tokens);
 private:
 	std::stack<GoalProver> _stack;
