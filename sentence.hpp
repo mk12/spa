@@ -17,10 +17,7 @@ public:
 	virtual Sentence* clone() const = 0;
 	// virtual ??? options() = 0;
 	virtual Value value() const = 0;
-	Value evaluate() const;
-	virtual void negate() { _want = !_want; }
-private:
-	bool _want = true;
+	virtual void negate() = 0;
 };
 
 // Logical sentences are the building blocks of the propositional calculus:
@@ -31,11 +28,11 @@ public:
 	Logical(Type t, Sentence* a, Sentence* b) : _type(t), _a(a), _b(b) {}
 	virtual ~Logical() { delete _a; delete _b; }
 	virtual Sentence* clone() const;
+	virtual Value value() const;
+	virtual void negate();
 	void contrapositive();
 	void converse();
 	void expandIff();
-	virtual Value value() const;
-	virtual void negate();
 	static int getType(const std::string& s);
 private:
 	Type _type;
@@ -46,13 +43,14 @@ private:
 // A relation is a sentence about two objects.
 class Relation : public Sentence {
 public:
-	enum Type { EQ, LT, IN, SUBSET };
+	enum Type { EQ, NEQ, LT, GT, LTE, GTE, NOTIN, IN, SUBSET };
 	Relation(Type t, Object* a, Object* b) : _type(t), _a(a), _b(b) {}
 	virtual ~Relation() { delete _a; delete _b; }
-	Sentence* expandSubset();
 	virtual Sentence* clone() const;
 	virtual Value value() const;
 	virtual void negate();
+	Sentence* expandSubset();
+	static int getType(const std::string& s);
 private:
 	Type _type;
 	Object* _a;
@@ -70,7 +68,6 @@ public:
 	Quantified(Type t, Symbol var, Set* domain, Sentence* body);
 	virtual ~Quantified() { delete _body; }
 	virtual Sentence* clone() const;
-	void makeUnique();
 	virtual Value value() const;
 	virtual void negate();
 	static int getType(const std::string& s);

@@ -6,9 +6,14 @@
 #include "sentence.hpp"
 
 #include <map>
+#include <string>
 #include <vector>
 
-Sentence* parse(
+extern const char* parseError;
+
+std::vector<std::string> tokenize(char* line);
+
+Sentence* parseSentence(
 	const std::vector<std::string>& tokens,
 	int i,
 	std::map<char, unsigned int>&);

@@ -2,16 +2,8 @@
 
 #include "sentence.hpp"
 
+#include <algorithm>
 #include <cassert>
-
-// =============================================================================
-//            Sentence
-// =============================================================================
-
-Sentence::Value Sentence::evaluate() const {
-	Value v = value();
-	return (v == MU) ? MU : (Value)(v == _want);
-}
 
 // =============================================================================
 //            Logical
@@ -39,26 +31,6 @@ Sentence::Value Logical::value() const {
 	}
 }
 
-void Logical::converse() {
-	assert(_type == IMPLIES);
-	std::swap(_a, _b);
-}
-
-void Logical::contrapositive() {
-	converse();
-	_a->negate();
-	_b->negate();
-}
-
-void Logical::expandIff() {
-	assert(_type == IFF);
-	_type = AND;
-	Logical* fwd = new Logical(IMPLIES, _a, _b);
-	Logical* bwd = new Logical(IMPLIES, _a->clone(), _b->clone());
-	_a = fwd;
-	_b = bwd;
-}
-
 void Logical::negate() {
 	switch (_type) {
 	case AND:
@@ -82,6 +54,26 @@ void Logical::negate() {
 	}
 }
 
+void Logical::converse() {
+	assert(_type == IMPLIES);
+	std::swap(_a, _b);
+}
+
+void Logical::contrapositive() {
+	converse();
+	_a->negate();
+	_b->negate();
+}
+
+void Logical::expandIff() {
+	assert(_type == IFF);
+	_type = AND;
+	Logical* fwd = new Logical(IMPLIES, _a, _b);
+	Logical* bwd = new Logical(IMPLIES, _a->clone(), _b->clone());
+	_a = fwd;
+	_b = bwd;
+}
+
 int Logical::getType(const std::string& s) {
 	if (s == "and") return AND;
 	if (s == "or") return OR;
@@ -99,7 +91,24 @@ Sentence* Relation::clone() const {
 }
 
 Sentence::Value Relation::value() const {
-	return Sentence::FALSE;
+	return Sentence::MU;
+}
+
+void Relation::negate() {
+	switch (_type) {
+	case EQ:    _type = NEQ;   break;
+	case NEQ:   _type = EQ;    break;
+	case LT:    _type = GTE;   break;
+	case GT:    _type = LTE;   break;
+	case LTE:   _type = GT;    break;
+	case GTE:   _type = LT;    break;
+	case IN:    _type = NOTIN; break;
+	case NOTIN: _type = IN;    break;
+	case SUBSET:
+		expandSubset();
+		negate();
+		break;
+	}
 }
 
 Sentence* Relation::expandSubset() {
@@ -113,26 +122,38 @@ Sentence* Relation::expandSubset() {
 	);
 }
 
-void Relation::negate() {
-	switch (_type) {
-	case SUBSET:
-		expandSubset();
-		negate();
-	default:
-		Sentence::negate();
-	}
+int Relation::getType(const std::string& s) {
+	if (s == "=") return EQ;
+	if (s == "!=") return NEQ;
+	if (s == "<") return LT;
+	if (s == ">") return GT;
+	if (s == "<=") return LTE;
+	if (s == ">=") return GTE;
+	if (s == "in") return IN;
+	if (s == "notin") return NOTIN;
+	if (s == "subset") return SUBSET;
+	return -1;
 }
 
 // =============================================================================
 //            Quantified
 // =============================================================================
 
+Quantified::Quantified(Type t, Symbol var, Set* domain, Sentence* body)
+	: _type(t), _var(var) {
+	_body = new Logical(
+		Logical::IMPLIES,
+		new Relation(Relation::IN, var.clone(), domain),
+		body
+	);
+}
+
 Sentence* Quantified::clone() const {
 	return new Quantified(_type, _var, _body->clone());
 }
 
 Sentence::Value Quantified::value() const {
-	return _body->value();
+	return Sentence::MU;
 }
 
 void Quantified::negate() {

@@ -3,10 +3,9 @@
 #include "object.hpp"
 #include "sentence.hpp"
 
-namespace err {
-	const char* no_err_msg = "no error message";
-	const char* unexpected_eoi = "unexpected end of input";
-}
+// =============================================================================
+//            Tokenize
+// =============================================================================
 
 // Returns a vector of string tokens by splitting on whitespace. Left and right
 // parentheses are always treated as separate tokens.
@@ -34,66 +33,111 @@ std::vector<std::string> tokenize(char* line) {
 	return tokens;
 }
 
-#define CHECK_EOI() do { if (i >= tokens.size()) { \
-	_parseError = strings::unexpected_eoi; \
-	return nullptr; \
+// =============================================================================
+//            Parse
+// =============================================================================
+
+namespace err {
+	const char* no_err_msg = "no error message";
+	const char* unexpected_eoi = "unexpected end of input";
+	const char* long_symbol = "symbols can only be one character long";
+	const char* domain_set = "expected domain to be a set";
+}
+
+const char* parseError = err::no_err_msg;
+
+#define CHECK_EOI() do { \
+	if (i >= tokens.size()) { \
+		parseError = err::unexpected_eoi; \
+		return nullptr; \
+	} \
 } while (0)
 
-#define EXPECT(c) do { if (tokens[i++] != c) { \
-	_parseError = "expected '" c "'"; \
-	return nullptr; \
+#define EXPECT(c) do { \
+	if (tokens[i++] != c) { \
+		parseError = "expected '" c "'"; \
+		return nullptr; \
+	} \
 } while (0)
 
-Object* Object::parse(
+Object* parseObject(
 		const std::vector<std::string>& tokens,
 		int& i,
 		std::map<char, unsigned int>& symbols) {
-	_parseError = strings::no_err_msg;
+	parseError = err::no_err_msg;
+	return nullptr;
 }
 
-Sentence* Sentence::parse(
+Sentence* parseSentenceHelp(
 		const std::vector<std::string>& tokens,
-		int& i
+		int& i,
+		std::map<char, unsigned int>& symbols);
+
+Sentence* parseSentence(
+		const std::vector<std::string>& tokens,
+		int& i,
 		std::map<char, unsigned int>& symbols) {
-	_parseError = strings::no_err_msg;
+	parseError = err::no_err_msg;
 	CHECK_EOI();
 	EXPECT("(");
 	CHECK_EOI();
-	const string tok = tokens[i++];
+	Sentence* s = parseSentenceHelp(tokens, i, symbols);
+	if (s != nullptr) {
+		EXPECT(")");
+	}
+	return s;
+}
+
+Sentence* parseSentenceHelp(
+		const std::vector<std::string>& tokens,
+		int& i,
+		std::map<char, unsigned int>& symbols) {
+	const std::string tok = tokens[i++];
 	int type = Logical::getType(tok);
 	if (type != -1) {
-		Sentence* a = parse(tokens, i, symbols);
+		Sentence* a = parseSentence(tokens, i, symbols);
 		if (a == nullptr) return nullptr;
-		Sentence* b = parse(tokens, i, symbols);
-		if (b == nullptr) return nullptr;
-		return new Logical(type, a, b);
+		Sentence* b = parseSentence(tokens, i, symbols);
+		if (b == nullptr) { delete a; return nullptr; }
+		return new Logical((Logical::Type)type, a, b);
+	}
+	type = Relation::getType(tok);
+	if (type != -1) {
+		Object *a = parseObject(tokens, i, symbols);
+		if (a == nullptr) return nullptr;
+		Object *b = parseObject(tokens, i, symbols);
+		if (b == nullptr) { delete a; return nullptr; }
+		return new Relation((Relation::Type)type, a, b);
 	}
 	type = Quantified::getType(tok);
 	if (type != -1) {
 		CHECK_EOI();
-		const string tok2 = tokens[i++];
+		const std::string tok2 = tokens[i++];
 		if (tok2.length() > 1) {
-			_parseError = "symbols can only be one character long";
+			parseError = err::long_symbol;
 			return nullptr;
 		}
 		Symbol x(tok2[0]);
 		x.insertInMap(symbols);
 		CHECK_EOI();
-		const string tok3 = tokens[i++];
+		const std::string tok3 = tokens[i++];
 		if (tok3 == "in") {
-			Object *set = Object::parse(tokens, i, symbols);
-			if (dynamic_cast<Set*>(set) == nullptr) {
-				_parseError = "expected domain to be a set";
+			Object *obj = parseObject(tokens, i, symbols);
+			if (obj == nullptr) return nullptr;
+			Set *set = dynamic_cast<Set*>(obj);
+			if (set == nullptr) {
+				delete obj;
+				parseError = err::domain_set;
 				return nullptr;
 			}
-			Sentence *body = parse(tokens, i, symbols);
-			if (body == nullptr) return nullptr;
-			return new Quantified(type, x, set, body);
+			Sentence *body = parseSentence(tokens, i, symbols);
+			if (body == nullptr) { delete set; return nullptr; }
+			return new Quantified((Quantified::Type)type, x, set, body);
 		} else {
 			i--;
-			Sentence *body = parse(tokens, i, symbols);
+			Sentence *body = parseSentence(tokens, i, symbols);
 			if (body == nullptr) return nullptr;
-			return new Quantified(type, x, body);
+			return new Quantified((Quantified::Type)type, x, body);
 		}
 	}
 	return nullptr;
