@@ -96,14 +96,14 @@ Sentence::Value Relation::value() const {
 
 void Relation::negate() {
 	switch (_type) {
-	case EQ:    _type = NEQ;   break;
-	case NEQ:   _type = EQ;    break;
-	case LT:    _type = GTE;   break;
-	case GT:    _type = LTE;   break;
-	case LTE:   _type = GT;    break;
-	case GTE:   _type = LT;    break;
-	case IN:    _type = NOTIN; break;
-	case NOTIN: _type = IN;    break;
+	case EQ: _type = NEQ; break;
+	case NEQ: _type = EQ; break;
+	case LT: _type = GTE; break;
+	case GT: _type = LTE; break;
+	case LTE: _type = GT; break;
+	case GTE: _type = LT; break;
+	case IN: _type = NOTIN; break;
+	case NOTIN: _type = IN; break;
 	case SUBSET:
 		expandSubset();
 		negate();

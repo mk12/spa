@@ -31,7 +31,7 @@ namespace strings {
 }
 
 // Runs the interactive proof assistant loop, using the GNU Readline library for
-// user input. Most commands are passed on to the TheoremProver.
+// user input. Most commands are passed on to the theorem prover.
 int main() {
 	char* line;
 	TheoremProver tp;
@@ -42,7 +42,7 @@ int main() {
 			std::cout << std::endl;
 			break;
 		}
-		std::vector<std::string> tokens = tokenize(line);
+		StrVec tokens = tokenize(line);
 		if (tokens.size() != 0) {
 			add_history(line);
 			if (tokens[0] == "quit" || tokens[0] == "exit") {

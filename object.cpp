@@ -24,14 +24,22 @@ Number* CompoundNumber::cloneSelf() const {
 
 std::ostream& CompoundNumber::print(std::ostream& s) const {
 	s << '(';
-	_a->print(s);
 	switch (_type) {
-	case ADD: s << " + "; break;
-	case SUB: s << " - "; break;
-	case MUL: s << " * "; break;
+	case ADD: s << '+'; break;
+	case SUB: s << '-'; break;
+	case MUL: s << '*'; break;
 	}
+	_a->print(s);
+	s << ' ';
 	_b->print(s);
 	return s << ')';
+}
+
+int CompoundNumber::getType(const std::string& s) {
+	if (s == "+") return ADD;
+	if (s == "-") return SUB;
+	if (s == "*") return MUL;
+	return -1;
 }
 
 // =============================================================================
@@ -72,13 +80,40 @@ Set* CompoundSet::cloneSelf() const {
 }
 
 std::ostream& CompoundSet::print(std::ostream& s) const {
-	_a->print(s);
+	s << '(';
 	switch (_type) {
-	case UNION: s << " (union) "; break;
-	case INTERSECT: s << " (intersect) "; break;
-	case DIFF: s << " \\ "; break;
+	case UNION: s << "union"; break;
+	case INTERSECT: s << " intersect"; break;
+	case DIFF: s << "diff"; break;
 	}
-	return _b->print(s);
+	_a->print(s);
+	s << ' ';
+	_b->print(s);
+	return s << ')';
+}
+
+int CompoundSet::getType(const std::string& s) {
+	if (s == "union") return UNION;
+	if (s == "intersect") return INTERSECT;
+	if (s == "diff") return DIFF;
+	return -1;
+}
+
+int SpecialSet::getType(const std::string& s) {
+	if (s == "null") return EMPTY;
+	if (s == "ZZ") return INTEGERS;
+	if (s == "NN") return NATURALS;
+	if (s == "SS") return SETS;
+	return -1;
+}
+
+std::ostream& SpecialSet::print(std::ostream& s) const {
+	switch(_type) {
+	case EMPTY: return s << "null";
+	case INTEGERS: return s << "ZZ";
+	case NATURALS: return s << "NN";
+	case SETS: return s << "SS";
+	}
 }
 
 // =============================================================================
