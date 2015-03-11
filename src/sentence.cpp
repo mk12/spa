@@ -185,7 +185,7 @@ int Relation::getType(const std::string& s) {
 Quantified::Quantified(Type t, Symbol* var, Set* domain, Sentence* body)
 	: _type(t), _var(var) {
 	_body = new Logical(
-		Logical::IMPLIES,
+		(_type == FORALL) ? Logical::IMPLIES : Logical::AND,
 		new Relation(Relation::IN, var->clone(), domain),
 		body
 	);
