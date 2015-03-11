@@ -9,7 +9,10 @@ usage="usage: $name [-h] [-t] [-d]"
 
 # Compiler and common options.
 CC=clang++
-options='-std=c++11 -Weverything -Wno-padded -pedantic'
+wno='-Wno-padded -Wmissing-variable-declarations -Wno-weak-vtables
+-Wno-global-constructors -Wno-exit-time-destructors
+-Wno-missing-variable-declarations -Wno-c++98-compat'
+options="-std=c++11 -Weverything -pedantic $wno"
 dist_opts='-DNDEBUG -Oz'
 debug_opts='-g'
 
@@ -47,7 +50,7 @@ elif (( $# == 1 )); then
 		echo "$usage"
 	elif [[ $1 == '-t' || $1 == '--test' ]]; then
 		compile_tests
-	elif [[ $1 == 'd' || $1 == '--debug' ]]; then
+	elif [[ $1 == '-d' || $1 == '--debug' ]]; then
 		compile $debug_opts
 	else
 		error_msg

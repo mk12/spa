@@ -8,7 +8,7 @@ TheoremProver::~TheoremProver() {
 	}
 }
 
-void error(const std::string& s) {
+static void error(const std::string& s) {
 	std::cerr << "error: " << s << std::endl;
 }
 
@@ -18,7 +18,7 @@ void TheoremProver::dispatch(const StrVec& tokens) {
 		if (tokens.size() <= 1) {
 			error("expecting theorem");
 		} else {
-			int i = 1;
+			Index i = 1;
 			Sentence* thm = parseSentence(tokens, i);
 			if (thm == nullptr) {
 				error(parseError);

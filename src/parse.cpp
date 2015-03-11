@@ -52,20 +52,20 @@ const char* parseError = err::default_msg;
 
 // I vow never to write a parser in C++ again. I will go running back to Parsec.
 // IC means that symbols are resolved In Context, using the SymMap.
-Sentence* parseSentenceIC(const StrVec&, int&, SymMap&);
-Object* parseObjectIC(const StrVec&, int&, SymMap&);
-Object* parseCompoundObjIC(const StrVec&, int&, SymMap&);
-Number* parseNumberIC(const StrVec&, int&, SymMap&);
-Set* parseSetIC(const StrVec&, int&, SymMap&);
-Symbol* parseSymbolIC(const std::string&, SymMap&);
+Sentence* parseSentenceIC(const StrVec&, Index&, SymMap&);
+Object* parseObjectIC(const StrVec&, Index&, SymMap&);
+Object* parseCompoundObjIC(const StrVec&, Index&, SymMap&);
+Number* parseNumberIC(const StrVec&, Index&, SymMap&);
+Set* parseSetIC(const StrVec&, Index&, SymMap&);
+Symbol* parseSymbolIC(const std::string&, SymMap&, bool);
 
-Sentence* parseSentence(const StrVec& tokens, int& i) {
+Sentence* parseSentence(const StrVec& tokens, Index& i) {
 	parseError = err::default_msg;
 	SymMap symbols;
 	return parseSentenceIC(tokens, i, symbols);
 }
 
-Sentence* parseSentenceIC(const StrVec& tokens, int& i, SymMap& symbols) {
+Sentence* parseSentenceIC(const StrVec& tokens, Index& i, SymMap& symbols) {
 	CHECK_EOI();
 	EXPECT("(");
 	CHECK_EOI();
@@ -76,7 +76,7 @@ Sentence* parseSentenceIC(const StrVec& tokens, int& i, SymMap& symbols) {
 		if (a == nullptr) return nullptr;
 		Sentence* b = parseSentenceIC(tokens, i, symbols);
 		if (b == nullptr) { delete a; return nullptr; }
-		RET_PAREN(new Logical((Logical::Type)type, a, b));
+		RET_PAREN(new Logical(static_cast<Logical::Type>(type), a, b));
 	}
 	type = Relation::getType(tok);
 	if (type != -1) {
@@ -84,30 +84,27 @@ Sentence* parseSentenceIC(const StrVec& tokens, int& i, SymMap& symbols) {
 		if (a == nullptr) return nullptr;
 		Object* b = parseObjectIC(tokens, i, symbols);
 		if (b == nullptr) { delete a; return nullptr; }
-		RET_PAREN(new Relation((Relation::Type)type, a, b));
+		RET_PAREN(new Relation(static_cast<Relation::Type>(type), a, b));
 	}
 	type = Quantified::getType(tok);
 	if (type != -1) {
 		CHECK_EOI();
 		const std::string tok2 = tokens[i++];
-		if (tok2.length() > 1) {
-			parseError = err::long_symbol;
-			return nullptr;
-		}
-		Symbol x(tok2[0], symbols, true);
+		Symbol* var = parseSymbolIC(tok2, symbols, true);
 		CHECK_EOI();
 		const std::string tok3 = tokens[i++];
+		auto qt = static_cast<Quantified::Type>(type);
 		if (tok3 == "in") {
 			Set* set = parseSetIC(tokens, i, symbols);
-			if (set == nullptr) return nullptr;
+			if (set == nullptr) { delete var; return nullptr; }
 			Sentence* body = parseSentenceIC(tokens, i, symbols);
-			if (body == nullptr) { delete set; return nullptr; }
-			RET_PAREN(new Quantified((Quantified::Type)type, x, set, body));
+			if (body == nullptr) { delete var; delete set; return nullptr; }
+			RET_PAREN(new Quantified(qt, var, set, body));
 		} else {
 			i--;
 			Sentence* body = parseSentenceIC(tokens, i, symbols);
-			if (body == nullptr) return nullptr;
-			RET_PAREN(new Quantified((Quantified::Type)type, x, body));
+			if (body == nullptr) { delete var; return nullptr; }
+			RET_PAREN(new Quantified(qt, var, body));
 		}
 	}
 	return nullptr;
@@ -117,7 +114,7 @@ Sentence* parseSentenceIC(const StrVec& tokens, int& i, SymMap& symbols) {
 //            Parse object
 // =============================================================================
 
-Object* parseObjectIC(const StrVec& tokens, int& i, SymMap& symbols) {
+Object* parseObjectIC(const StrVec& tokens, Index& i, SymMap& symbols) {
 	CHECK_EOI();
 	const std::string tok = tokens[i++];
 	if (tok == "(") {
@@ -168,20 +165,22 @@ Object* parseObjectIC(const StrVec& tokens, int& i, SymMap& symbols) {
 	}
 	int type = SpecialSet::getType(tok);
 	if (type != -1) {
-		return new SpecialSet((SpecialSet::Type)type);
+		return new SpecialSet(static_cast<SpecialSet::Type>(type));
 	}
 	try {
 		int num = std::stoi(tok);
 		return new ConcreteNumber(num);
 	} catch (const std::invalid_argument& e) {
+		(void)e;
 	} catch (const std::out_of_range& e) {
+		(void)e;
 		parseError = err::out_of_range;
 		return nullptr;
 	}
-	return parseSymbolIC(tok, symbols);
+	return parseSymbolIC(tok, symbols, false);
 }
 
-Object* parseCompoundObjIC(const StrVec& tokens, int& i, SymMap& symbols) {
+Object* parseCompoundObjIC(const StrVec& tokens, Index& i, SymMap& symbols) {
 	CHECK_EOI();
 	const std::string tok = tokens[i++];
 	int type = CompoundNumber::getType(tok);
@@ -190,7 +189,8 @@ Object* parseCompoundObjIC(const StrVec& tokens, int& i, SymMap& symbols) {
 		if (a == nullptr) return nullptr;
 		Number* b = parseNumberIC(tokens, i, symbols);
 		if (b == nullptr) { delete a; return nullptr; }
-		return new CompoundNumber((CompoundNumber::Type)type, a, b);
+		auto t = static_cast<CompoundNumber::Type>(type);
+		return new CompoundNumber(t, a, b);
 	}
 	type = CompoundSet::getType(tok);
 	if (type != -1) {
@@ -198,12 +198,12 @@ Object* parseCompoundObjIC(const StrVec& tokens, int& i, SymMap& symbols) {
 		if (a == nullptr) return nullptr;
 		Set* b = parseSetIC(tokens, i, symbols);
 		if (b == nullptr) { delete a; return nullptr; }
-		return new CompoundSet((CompoundSet::Type)type, a, b);
+		return new CompoundSet(static_cast<CompoundSet::Type>(type), a, b);
 	}
 	return nullptr;
 }
 
-Number* parseNumberIC(const StrVec& tokens, int& i, SymMap& symbols) {
+Number* parseNumberIC(const StrVec& tokens, Index& i, SymMap& symbols) {
 	Object* obj = parseObjectIC(tokens, i, symbols);
 	if (obj == nullptr) return nullptr;
 	Number* num = dynamic_cast<Number*>(obj);
@@ -215,7 +215,7 @@ Number* parseNumberIC(const StrVec& tokens, int& i, SymMap& symbols) {
 	return num;
 }
 
-Set* parseSetIC(const StrVec& tokens, int& i, SymMap& symbols) {
+Set* parseSetIC(const StrVec& tokens, Index& i, SymMap& symbols) {
 	Object* obj = parseObjectIC(tokens, i, symbols);
 	if (obj == nullptr) return nullptr;
 	Set* set = dynamic_cast<Set*>(obj);
@@ -227,7 +227,7 @@ Set* parseSetIC(const StrVec& tokens, int& i, SymMap& symbols) {
 	return set;
 }
 
-Symbol* parseSymbolIC(const std::string& str, SymMap& symbols) {
+Symbol* parseSymbolIC(const std::string& str, SymMap& symbols, bool fresh) {
 	if (str.length() > 1) {
 		parseError = err::long_symbol;
 		return nullptr;
@@ -237,7 +237,7 @@ Symbol* parseSymbolIC(const std::string& str, SymMap& symbols) {
 		parseError = err::bad_symbol;
 		return nullptr;
 	}
-	return new Symbol(c, symbols, false);
+	return new Symbol(c, symbols, fresh);
 }
 
 // =============================================================================

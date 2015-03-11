@@ -16,6 +16,8 @@ typedef std::map<char, unsigned int> SymMap;
 // and they can print themselves to output streams.
 class Object {
 public:
+	Object() {}
+	Object(const Object&) = delete;
 	virtual ~Object() {}
 
 	// Creates a deep copy of the object. The subclasses of Object implement

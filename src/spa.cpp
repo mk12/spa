@@ -9,7 +9,8 @@
 #include <iostream>
 
 namespace strings {
-	const char* prompt = "spa> ";
+	namespace {
+	static const char* prompt = "spa> ";
 
 	const char* header =
 	" _____   _____   _____\n"
@@ -29,7 +30,7 @@ namespace strings {
 	"goal   -  show the current goal\n"
 	"stack  -  show the entire proof stack\n"
 	"print  -  print the formal proof\n\n";
-}
+}}
 
 // Runs the interactive proof assistant loop, using the GNU Readline library for
 // user input. Most commands are passed on to the theorem prover.

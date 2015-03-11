@@ -108,12 +108,12 @@ public:
 
 	// Creates an ordinary quantified statement of the given type with the
 	// supplied variable and the body, which should be an open sentence.
-	Quantified(Type t, Symbol var, Sentence* body)
+	Quantified(Type t, Symbol* var, Sentence* body)
 		: _type(t), _var(var), _body(body) {}
 
 	// Creates a quantified statement using the domain shorthand, which
 	// restricts the values of the variable considered to a particular set.
-	Quantified(Type t, Symbol var, Set* domain, Sentence* body);
+	Quantified(Type t, Symbol* var, Set* domain, Sentence* body);
 
 	virtual ~Quantified() { delete _body; }
 	virtual Sentence* clone() const;
@@ -126,7 +126,12 @@ public:
 
 private:
 	Type _type; // the quantifier type
-	Symbol _var; // the bound variable
+
+	// The bound variable. This doesn't really need to be a pointer, since it
+	// could be embedded directly in this object. However, using a pointer
+	// simplifies things and makes everything more consistent.
+	Symbol* _var;
+
 	Sentence* _body; // the quantified open sentence
 };
 

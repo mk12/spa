@@ -9,6 +9,7 @@
 #include <vector>
 
 typedef std::vector<std::string> StrVec;
+typedef std::vector<std::string>::size_type Index;
 
 // The parsing functions always store an error message in this string when they
 // fail, before returning null.
@@ -16,7 +17,7 @@ extern const char* parseError;
 
 // Parses a complete sentence in prefix notation. Returns null on failure and
 // stores an error message in parseError.
-Sentence* parseSentence(const StrVec& tokens, int& i);
+Sentence* parseSentence(const StrVec& tokens, Index& i);
 
 // Returns a vector of string tokens by splitting on whitespace. Left and right
 // parentheses/braces and commas are always treated as separate tokens.

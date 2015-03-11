@@ -29,13 +29,13 @@ Sentence::Value Logical::value() const {
 	}
 	switch(_type) {
 	case AND:
-		return (Value)(va && vb); break;
+		return static_cast<Value>(va && vb);
 	case OR:
-		return (Value)(va || vb); break;
+		return static_cast<Value>(va || vb);
 	case IMPLIES:
-		return (Value)(!va || vb); break;
+		return static_cast<Value>(!va || vb);
 	case IFF:
-		return (Value)(va == vb); break;
+		return static_cast<Value>(va == vb);
 	}
 }
 
@@ -156,12 +156,12 @@ std::ostream& Relation::print(std::ostream& s) const {
 
 Sentence* Relation::expandSubset() {
 	assert(_type == SUBSET);
-	Symbol x('x');
+	Symbol* var = new Symbol('x');
 	return new Quantified(
 		Quantified::FORALL,
-		x,
+		var,
 		dynamic_cast<Set*>(_a->clone()),
-		new Relation(Relation::IN, x.cloneSelf(), _b->clone())
+		new Relation(Relation::IN, var->cloneSelf(), _b->clone())
 	);
 }
 
@@ -182,17 +182,17 @@ int Relation::getType(const std::string& s) {
 //            Quantified
 // =============================================================================
 
-Quantified::Quantified(Type t, Symbol var, Set* domain, Sentence* body)
+Quantified::Quantified(Type t, Symbol* var, Set* domain, Sentence* body)
 	: _type(t), _var(var) {
 	_body = new Logical(
 		Logical::IMPLIES,
-		new Relation(Relation::IN, var.clone(), domain),
+		new Relation(Relation::IN, var->clone(), domain),
 		body
 	);
 }
 
 Sentence* Quantified::clone() const {
-	return new Quantified(_type, _var, _body->clone());
+	return new Quantified(_type, _var->cloneSelf(), _body->clone());
 }
 
 Sentence::Value Quantified::value() const {
@@ -200,7 +200,7 @@ Sentence::Value Quantified::value() const {
 }
 
 void Quantified::negate() {
-	_type = (Type)!_type;
+	_type = static_cast<Type>(!_type);
 	_body->negate();
 }
 
@@ -211,7 +211,7 @@ std::ostream& Quantified::print(std::ostream& s) const {
 	case EXISTS: s << "exists"; break;
 	}
 	s << ' ';
-	_var.print(s);
+	_var->print(s);
 	s << ' ';
 	_body->print(s);
 	return s << ')';
