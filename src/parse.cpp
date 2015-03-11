@@ -43,7 +43,6 @@ const char* parseError = err::default_msg;
 #define RET_PAREN(x) do { \
 	auto _ret = (x); \
 	if (tokens[i++] != ")") { \
-		std::cerr << i << std::endl; \
 		parseError = "expected ')'"; \
 		delete _ret; \
 		return nullptr; \

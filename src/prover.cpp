@@ -8,16 +8,20 @@ TheoremProver::~TheoremProver() {
 	}
 }
 
+void error(const std::string& s) {
+	std::cerr << "error: " << s << std::endl;
+}
+
 void TheoremProver::dispatch(const StrVec& tokens) {
 	std::string cmd = tokens[0];
 	if (cmd == "prove") {
 		if (tokens.size() <= 1) {
-			std::cerr << "expecting theorem" << std::endl;
+			error("expecting theorem");
 		} else {
 			int i = 1;
 			Sentence* thm = parseSentence(tokens, i);
 			if (thm == nullptr) {
-				std::cerr << parseError << std::endl;
+				error(parseError);
 			} else {
 				if (_theorem != nullptr) {
 					delete _theorem;
@@ -27,7 +31,7 @@ void TheoremProver::dispatch(const StrVec& tokens) {
 		}
 	} else if (cmd == "thm") {
 		if (_theorem == nullptr) {
-			std::cerr << "no theorem is loaded" << std::endl;
+			error("no theorem is loaded");
 		} else {
 			std::cout << *_theorem << std::endl;
 		}
