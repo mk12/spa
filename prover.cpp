@@ -8,17 +8,17 @@ TheoremProver::~TheoremProver() {
 	}
 }
 
-void TheoremProver::dispatch(const std::vector<std::string>& tokens) {
+void TheoremProver::dispatch(const StrVec& tokens) {
 	std::string cmd = tokens[0];
 	if (cmd == "thm") {
 		if (_theorem == nullptr) {
-			std::map<char, unsigned int> symbols;
-			_theorem = Sentence::parse(tokens, 1, symbols);
+			int i = 1;
+			_theorem = parseSentence(tokens, i);
 			if (_theorem == nullptr) {
-				std::cout << Sentence::_parseError << std::endl;
+				std::cout << parseError << std::endl;
 			}
 		} else {
-			std::cout << _theorem;
+			std::cout << *_theorem << std::endl;
 		}
 	} else if (cmd == "stack") {
 		// print stack

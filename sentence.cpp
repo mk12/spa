@@ -9,6 +9,14 @@
 //            Logical
 // =============================================================================
 
+std::ostream& operator<<(std::ostream& stream, const Sentence& s) {
+	return s.print(stream);
+}
+
+// =============================================================================
+//            Logical
+// =============================================================================
+
 Sentence* Logical::clone() const {
 	return new Logical(_type, _a->clone(), _b->clone());
 }
@@ -52,6 +60,21 @@ void Logical::negate() {
 		negate();
 		break;
 	}
+}
+
+std::ostream& Logical::print(std::ostream& s) const {
+	s << '(';
+	switch (_type) {
+	case AND: s << "and"; break;
+	case OR: s << "or"; break;
+	case IMPLIES: s << "=>"; break;
+	case IFF: s << "iff"; break;
+	}
+	s << ' ';
+	_a->print(s);
+	s << ' ';
+	_b->print(s);
+	return s << ')';
 }
 
 void Logical::converse() {
@@ -111,6 +134,26 @@ void Relation::negate() {
 	}
 }
 
+std::ostream& Relation::print(std::ostream& s) const {
+	s << '(';
+	switch (_type) {
+	case EQ: s << '='; break;
+	case NEQ: s << "!="; break;
+	case LT: s << '<'; break;
+	case GT: s << '>'; break;
+	case LTE: s << "<="; break;
+	case GTE: s << ">="; break;
+	case IN: s << "in"; break;
+	case NOTIN: s << "notin"; break;
+	case SUBSET: s << "subset"; break;
+	}
+	s << ' ';
+	_a->print(s);
+	s << ' ';
+	_b->print(s);
+	return s << ')';
+}
+
 Sentence* Relation::expandSubset() {
 	assert(_type == SUBSET);
 	Symbol x('x');
@@ -159,6 +202,19 @@ Sentence::Value Quantified::value() const {
 void Quantified::negate() {
 	_type = (Type)!_type;
 	_body->negate();
+}
+
+std::ostream& Quantified::print(std::ostream& s) const {
+	s << '(';
+	switch (_type) {
+	case FORALL: s << "forall"; break;
+	case EXISTS: s << "exists"; break;
+	}
+	s << ' ';
+	_var.print(s);
+	s << ' ';
+	_body->print(s);
+	return s << ')';
 }
 
 int Quantified::getType(const std::string& s) {

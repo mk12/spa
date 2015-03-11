@@ -5,17 +5,21 @@
 
 #include "sentence.hpp"
 
-#include <map>
 #include <string>
 #include <vector>
 
+typedef std::vector<std::string> StrVec;
+
+// The parsing functions always store an error message in this string when they
+// fail, before returning null.
 extern const char* parseError;
 
-std::vector<std::string> tokenize(char* line);
+// Parses a complete sentence in prefix notation. Returns null on failure and
+// stores an error message in parseError.
+Sentence* parseSentence(const StrVec& tokens, int& i);
 
-Sentence* parseSentence(
-	const std::vector<std::string>& tokens,
-	int i,
-	std::map<char, unsigned int>&);
+// Returns a vector of string tokens by splitting on whitespace. Left and right
+// parentheses and commas are always treated as separate tokens.
+StrVec tokenize(char* line);
 
 #endif

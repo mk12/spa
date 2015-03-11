@@ -8,6 +8,9 @@
 #include <string>
 #include <vector>
 
+// A symbol map is a mapping from symbol characters to their identifiers.
+typedef std::map<char, unsigned int> SymMap;
+
 // An object can represent anything. In practice, it is always an idealized
 // mathematical object, like a number or set. Objects can be cloned (deep copy),
 // and they can print themselves to output streams.
@@ -21,7 +24,7 @@ public:
 	virtual Object* clone() const = 0;
 
 	// Prints a string representation of the object to the given stream.
-	virtual std::ostream& print(std::ostream& stream) const = 0;
+	virtual std::ostream& print(std::ostream& s) const = 0;
 	friend std::ostream& operator<<(std::ostream& stream, const Object& obj);
 };
 
@@ -74,8 +77,8 @@ public:
 // A concrete set contains a finite list of objects.
 class ConcreteSet : public Set {
 public:
-	virtual ~ConcreteSet();
 	ConcreteSet(std::vector<Object*> items) : _items(items) {}
+	virtual ~ConcreteSet();
 	virtual Set* cloneSelf() const;
 	virtual std::ostream& print(std::ostream& s) const;
 
@@ -90,6 +93,8 @@ public:
 	enum Type { EMPTY, INTEGERS, NATURALS, SETS };
 
 	SpecialSet(Type t) : _type(t) {}
+	virtual Set* cloneSelf() const;
+	virtual std::ostream& print(std::ostream& s) const;
 
 	// Returns the set type specified by the string, or -1 otherwise.
 	static int getType(const std::string& s);
@@ -134,7 +139,7 @@ public:
 	bool operator==(const Symbol& s) const { return _id == s._id; }
 
 	// Inserts the character-identifier mapping for this symbol into the map.
-	void insertInMap(std::map<char, unsigned int>& symbols);
+	void insertInMap(SymMap& symbols);
 
 private:
 	char _c; // the character used when printing

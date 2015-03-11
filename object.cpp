@@ -29,6 +29,7 @@ std::ostream& CompoundNumber::print(std::ostream& s) const {
 	case SUB: s << '-'; break;
 	case MUL: s << '*'; break;
 	}
+	s << ' ';
 	_a->print(s);
 	s << ' ';
 	_b->print(s);
@@ -83,9 +84,10 @@ std::ostream& CompoundSet::print(std::ostream& s) const {
 	s << '(';
 	switch (_type) {
 	case UNION: s << "union"; break;
-	case INTERSECT: s << " intersect"; break;
+	case INTERSECT: s << "intersect"; break;
 	case DIFF: s << "diff"; break;
 	}
+	s << ' ';
 	_a->print(s);
 	s << ' ';
 	_b->print(s);
@@ -107,6 +109,10 @@ int SpecialSet::getType(const std::string& s) {
 	return -1;
 }
 
+Set* SpecialSet::cloneSelf() const {
+	return new SpecialSet(_type);
+}
+
 std::ostream& SpecialSet::print(std::ostream& s) const {
 	switch(_type) {
 	case EMPTY: return s << "null";
@@ -126,6 +132,6 @@ Symbol* Symbol::cloneSelf() const {
 	return new Symbol(_c, _id);
 }
 
-void Symbol::insertInMap(std::map<char, unsigned int>& symbols) {
+void Symbol::insertInMap(SymMap& symbols) {
 	symbols[_c] = _id;
 }

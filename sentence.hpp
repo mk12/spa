@@ -29,6 +29,10 @@ public:
 	// negation as far as possible and try to express the result in a positive
 	// form, rather than simply wrapping the whole sentence in a logical NOT.
 	virtual void negate() = 0;
+
+	// Prints a string representation of the sentence to the given stream.
+	virtual std::ostream& print(std::ostream& s) const = 0;
+	friend std::ostream& operator<<(std::ostream& stream, const Sentence& s);
 };
 
 // Logical sentences are the building blocks of the propositional calculus.
@@ -43,6 +47,7 @@ public:
 	virtual Sentence* clone() const;
 	virtual Value value() const;
 	virtual void negate();
+	virtual std::ostream& print(std::ostream& s) const;
 
 	// Assumes the type is IMPLIES. Changes the implication "A implies B" to the
 	// equivalent sentence "not B implies not A", known as the contrapositive.
@@ -79,6 +84,7 @@ public:
 	virtual Sentence* clone() const;
 	virtual Value value() const;
 	virtual void negate();
+	virtual std::ostream& print(std::ostream& s) const;
 
 	// Assumes the type is SUBSET. Expands the sentence into the sentence
 	// "forall x in A: x in B", which is the definition of the subset relation.
@@ -113,6 +119,7 @@ public:
 	virtual Sentence* clone() const;
 	virtual Value value() const;
 	virtual void negate();
+	virtual std::ostream& print(std::ostream& s) const;
 
 	// Returns the quantifier type specified by the string, or -1 otherwise.
 	static int getType(const std::string& s);
