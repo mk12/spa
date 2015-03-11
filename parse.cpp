@@ -6,16 +6,17 @@
 #include "sentence.hpp"
 
 namespace err {
-	const char* no_err_msg = "no error message";
+	const char* default_msg = "invalid input";
 	const char* unexpected_eoi = "unexpected end of input";
+	const char* obj_num = "expected object to be a number";
+	const char* out_of_range = "integer out of range";
+	const char* obj_set = "expected object to be a set";
+	const char* set_comma = "expected comma in set";
 	const char* long_symbol = "symbols can only be one character long";
 	const char* bad_symbol = "invalid symbol character";
-	const char* obj_num = "expected object to be a number";
-	const char* obj_set = "expected object to be a set";
-	const char* out_of_range = "integer out of range";
 }
 
-const char* parseError = err::no_err_msg;
+const char* parseError = err::default_msg;
 
 // =============================================================================
 //            Parse sentence
@@ -39,9 +40,10 @@ const char* parseError = err::no_err_msg;
 
 // Returns a value after checking for a right parenthesis character. If it is
 // not found, deletes the created return value before returning null.
-#define RETURN_PAREN(x) do { \
+#define RET_PAREN(x) do { \
 	auto _ret = (x); \
 	if (tokens[i++] != ")") { \
+		std::cerr << i << std::endl; \
 		parseError = "expected ')'"; \
 		delete _ret; \
 		return nullptr; \
@@ -59,7 +61,7 @@ Set* parseSetIC(const StrVec&, int&, SymMap&);
 Symbol* parseSymbolIC(const std::string&, SymMap&);
 
 Sentence* parseSentence(const StrVec& tokens, int& i) {
-	parseError = err::no_err_msg;
+	parseError = err::default_msg;
 	SymMap symbols;
 	return parseSentenceIC(tokens, i, symbols);
 }
@@ -75,7 +77,7 @@ Sentence* parseSentenceIC(const StrVec& tokens, int& i, SymMap& symbols) {
 		if (a == nullptr) return nullptr;
 		Sentence* b = parseSentenceIC(tokens, i, symbols);
 		if (b == nullptr) { delete a; return nullptr; }
-		RETURN_PAREN(new Logical((Logical::Type)type, a, b));
+		RET_PAREN(new Logical((Logical::Type)type, a, b));
 	}
 	type = Relation::getType(tok);
 	if (type != -1) {
@@ -83,7 +85,7 @@ Sentence* parseSentenceIC(const StrVec& tokens, int& i, SymMap& symbols) {
 		if (a == nullptr) return nullptr;
 		Object* b = parseObjectIC(tokens, i, symbols);
 		if (b == nullptr) { delete a; return nullptr; }
-		RETURN_PAREN(new Relation((Relation::Type)type, a, b));
+		RET_PAREN(new Relation((Relation::Type)type, a, b));
 	}
 	type = Quantified::getType(tok);
 	if (type != -1) {
@@ -102,12 +104,12 @@ Sentence* parseSentenceIC(const StrVec& tokens, int& i, SymMap& symbols) {
 			if (set == nullptr) return nullptr;
 			Sentence* body = parseSentenceIC(tokens, i, symbols);
 			if (body == nullptr) { delete set; return nullptr; }
-			RETURN_PAREN(new Quantified((Quantified::Type)type, x, set, body));
+			RET_PAREN(new Quantified((Quantified::Type)type, x, set, body));
 		} else {
 			i--;
 			Sentence* body = parseSentenceIC(tokens, i, symbols);
 			if (body == nullptr) return nullptr;
-			RETURN_PAREN(new Quantified((Quantified::Type)type, x, body));
+			RET_PAREN(new Quantified((Quantified::Type)type, x, body));
 		}
 	}
 	return nullptr;
@@ -121,14 +123,50 @@ Object* parseObjectIC(const StrVec& tokens, int& i, SymMap& symbols) {
 	CHECK_EOI();
 	const std::string tok = tokens[i++];
 	if (tok == "(") {
-		RETURN_PAREN(parseCompoundObjIC(tokens, i, symbols));
+		RET_PAREN(parseCompoundObjIC(tokens, i, symbols));
 	}
 	if (tok == "{") {
-		return nullptr;
 		std::vector<Object*> items;
+		bool success = true;
 		for (;;) {
-
+			if (i >= tokens.size()) {
+				parseError = err::unexpected_eoi;
+				success = false;
+				break;
+			}
+			const std::string tok2 = tokens[i++];
+			if (tok2 == "}") {
+				break;
+			}
+			i--;
+			Object* obj = parseObjectIC(tokens, i, symbols);
+			if (obj == nullptr) {
+				success = false;
+				break;
+			}
+			items.push_back(obj);
+			if (i >= tokens.size()) {
+				parseError = err::unexpected_eoi;
+				success = false;
+				break;
+			}
+			const std::string tok3 = tokens[i++];
+			if (tok3 == "}") {
+				break;
+			}
+			if (tok3 != ",") {
+				parseError = err::set_comma;
+				success = false;
+				break;
+			}
 		}
+		if (success) {
+			return new ConcreteSet(items);
+		}
+		for (Object* obj: items) {
+			delete obj;
+		}
+		return nullptr;
 	}
 	int type = SpecialSet::getType(tok);
 	if (type != -1) {
@@ -219,13 +257,13 @@ StrVec tokenize(char* line) {
 	char c;
 	std::string s;
 	while ((c = *line++)) {
-		bool special = (c == '(' || c == ')' || c == ',');
-		if (special || c == ' ' || c == '\t' || c == '\n' || c == '\r') {
+		bool punct = (c == '(' || c == ')' || c == '{' || c == '}' || c == ',');
+		if (punct || c == ' ' || c == '\t' || c == '\n' || c == '\r') {
 			if (!s.empty()) {
 				tokens.push_back(s);
 				s.clear();
 			}
-			if (special) {
+			if (punct) {
 				tokens.push_back(std::string(1, c));
 			}
 		} else {

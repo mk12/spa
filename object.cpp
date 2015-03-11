@@ -50,14 +50,14 @@ int CompoundNumber::getType(const std::string& s) {
 Set* ConcreteSet::cloneSelf() const {
 	std::vector<Object*> v;
 	v.reserve(_items.size());
-	for (Object *obj: _items) {
+	for (Object* obj: _items) {
 		v.push_back(obj->clone());
 	}
 	return new ConcreteSet(v);
 }
 
 ConcreteSet::~ConcreteSet() {
-	for (Object *obj: _items) {
+	for (Object* obj: _items) {
 		delete obj;
 	}
 }

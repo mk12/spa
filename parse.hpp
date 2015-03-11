@@ -19,7 +19,7 @@ extern const char* parseError;
 Sentence* parseSentence(const StrVec& tokens, int& i);
 
 // Returns a vector of string tokens by splitting on whitespace. Left and right
-// parentheses and commas are always treated as separate tokens.
+// parentheses/braces and commas are always treated as separate tokens.
 StrVec tokenize(char* line);
 
 #endif
