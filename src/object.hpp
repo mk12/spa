@@ -126,10 +126,14 @@ private:
 class Symbol : public Number, public Set {
 public:
 	// Creates a new symbol with a unique identifier.
-	Symbol(char c) : _c(c) { _id = _count++; }
+	Symbol(char c) : _c(c), _id(genUniqueId()) {}
 
-	// Creates a new symbol by reusing the given identifier.
-	Symbol(char c, unsigned int id) : _c(c),  _id(id) {}
+	// Creates a new symbol in the given context. Fresh symbols always get
+	// unique identifiers. Non-fresh symbols (or rather, not-necessarily-fresh
+	// symbols) reuse existing identifiers if their characters are already bound
+	// in the symbol map; otherwise, they get unique identifiers as well. In all
+	// cases, if a unique identifer is generated, it will be added to the map.
+	Symbol(char c, SymMap& symbols, bool fresh);
 
 	Symbol* cloneSelf() const;
 	virtual Object* clone() const { return cloneSelf(); }
@@ -138,10 +142,13 @@ public:
 	// Symbols are equal if they have the same identifier.
 	bool operator==(const Symbol& s) const { return _id == s._id; }
 
-	// Inserts the character-identifier mapping for this symbol into the map.
-	void insertInMap(SymMap& symbols);
-
 private:
+	// Creates a new symbol by reusing the given identifier.
+	Symbol(char c, unsigned int id) : _c(c),  _id(id) {}
+
+	// Generates a unique symbol identifier.
+	static unsigned int genUniqueId() { return _count++; }
+
 	char _c; // the character used when printing
 	unsigned int _id; // the identifier
 

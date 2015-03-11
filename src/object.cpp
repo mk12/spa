@@ -128,10 +128,18 @@ std::ostream& SpecialSet::print(std::ostream& s) const {
 
 unsigned int Symbol::_count = 0;
 
-Symbol* Symbol::cloneSelf() const {
-	return new Symbol(_c, _id);
+Symbol::Symbol(char c, SymMap& symbols, bool fresh) : _c(c) {
+	if (!fresh) {
+		auto iter = symbols.find(_c);
+		if (iter != symbols.end()) {
+			_id = iter->second;
+			return;
+		}
+	}
+	_id = genUniqueId();
+	symbols[_c] = _id;
 }
 
-void Symbol::insertInMap(SymMap& symbols) {
-	symbols[_c] = _id;
+Symbol* Symbol::cloneSelf() const {
+	return new Symbol(_c, _id);
 }

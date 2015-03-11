@@ -94,8 +94,7 @@ Sentence* parseSentenceIC(const StrVec& tokens, int& i, SymMap& symbols) {
 			parseError = err::long_symbol;
 			return nullptr;
 		}
-		Symbol x(tok2[0]);
-		x.insertInMap(symbols);
+		Symbol x(tok2[0], symbols, true);
 		CHECK_EOI();
 		const std::string tok3 = tokens[i++];
 		if (tok3 == "in") {
@@ -238,13 +237,7 @@ Symbol* parseSymbolIC(const std::string& str, SymMap& symbols) {
 		parseError = err::bad_symbol;
 		return nullptr;
 	}
-	auto iter = symbols.find(c);
-	if (iter != symbols.end()) {
-		return new Symbol(c, iter->second);
-	}
-	Symbol* s = new Symbol(c);
-	s->insertInMap(symbols);
-	return s;
+	return new Symbol(c, symbols, false);
 }
 
 // =============================================================================
