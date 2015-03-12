@@ -41,7 +41,7 @@ public:
 // A concrete number is simply an integer.
 class ConcreteNumber : public Number {
 public:
-	ConcreteNumber(int x) : _x(x) {}
+	explicit ConcreteNumber(int x) : _x(x) {}
 	virtual Number* cloneSelf() const;
 	virtual std::ostream& print(std::ostream& s) const { return s << _x; }
 
@@ -79,7 +79,7 @@ public:
 // A concrete set contains a finite list of objects.
 class ConcreteSet : public Set {
 public:
-	ConcreteSet(std::vector<Object*> items) : _items(items) {}
+	explicit ConcreteSet(std::vector<Object*> items) : _items(items) {}
 	virtual ~ConcreteSet();
 	virtual Set* cloneSelf() const;
 	virtual std::ostream& print(std::ostream& s) const;
@@ -94,7 +94,7 @@ class SpecialSet : public Set {
 public:
 	enum Type { EMPTY, INTEGERS, NATURALS, SETS };
 
-	SpecialSet(Type t) : _type(t) {}
+	explicit SpecialSet(Type t) : _type(t) {}
 	virtual Set* cloneSelf() const;
 	virtual std::ostream& print(std::ostream& s) const;
 
@@ -128,7 +128,7 @@ private:
 class Symbol : public Number, public Set {
 public:
 	// Creates a new symbol with a unique identifier.
-	Symbol(char c) : _c(c), _id(genUniqueId()) {}
+	explicit Symbol(char c) : _c(c), _id(genUniqueId()) {}
 
 	// Creates a new symbol in the given context. Fresh symbols always get
 	// unique identifiers. Non-fresh symbols (or rather, not-necessarily-fresh
