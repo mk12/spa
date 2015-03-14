@@ -5,18 +5,18 @@
 #include "object.hpp"
 #include "sentence.hpp"
 
-namespace err {
-	const char* default_msg = "invalid input";
-	const char* unexpected_eoi = "unexpected end of input";
-	const char* obj_num = "expected object to be a number";
-	const char* out_of_range = "integer out of range";
-	const char* obj_set = "expected object to be a set";
-	const char* set_comma = "expected comma in set";
-	const char* long_symbol = "symbols can only be one character long";
-	const char* bad_symbol = "invalid symbol character";
+namespace {
+	const char* err_default = "invalid input";
+	const char* err_eoi = "unexpected end of input";
+	const char* err_nan = "expected object to be a number";
+	const char* err_range = "integer out of range";
+	const char* err_nas = "expected object to be a set";
+	const char* err_comma = "expected comma in set";
+	const char* err_long = "symbols can only be one character long";
+	const char* err_char = "invalid symbol character";
 }
 
-const char* parseError = err::default_msg;
+const char* parseError = nullptr;
 
 // =============================================================================
 //            Parse sentence
@@ -25,7 +25,7 @@ const char* parseError = err::default_msg;
 // Checks to make sure there are more tokens (as opposed to End Of Input).
 #define CHECK_EOI() do { \
 	if (i >= tokens.size()) { \
-		parseError = err::unexpected_eoi; \
+		parseError = err_eoi; \
 		return nullptr; \
 	} \
 } while (0)
@@ -60,7 +60,7 @@ Set* parseSetIC(const StrVec&, Index&, SymMap&);
 Symbol* parseSymbolIC(const std::string&, SymMap&, bool);
 
 Sentence* parseSentence(const StrVec& tokens, Index& i) {
-	parseError = err::default_msg;
+	parseError = err_default;
 	SymMap symbols;
 	return parseSentenceIC(tokens, i, symbols);
 }
@@ -125,7 +125,7 @@ Object* parseObjectIC(const StrVec& tokens, Index& i, SymMap& symbols) {
 		bool success = true;
 		for (;;) {
 			if (i >= tokens.size()) {
-				parseError = err::unexpected_eoi;
+				parseError = err_eoi;
 				success = false;
 				break;
 			}
@@ -141,7 +141,7 @@ Object* parseObjectIC(const StrVec& tokens, Index& i, SymMap& symbols) {
 			}
 			items.push_back(obj);
 			if (i >= tokens.size()) {
-				parseError = err::unexpected_eoi;
+				parseError = err_eoi;
 				success = false;
 				break;
 			}
@@ -150,7 +150,7 @@ Object* parseObjectIC(const StrVec& tokens, Index& i, SymMap& symbols) {
 				break;
 			}
 			if (tok3 != ",") {
-				parseError = err::set_comma;
+				parseError = err_comma;
 				success = false;
 				break;
 			}
@@ -174,7 +174,7 @@ Object* parseObjectIC(const StrVec& tokens, Index& i, SymMap& symbols) {
 		(void)e;
 	} catch (const std::out_of_range& e) {
 		(void)e;
-		parseError = err::out_of_range;
+		parseError = err_range;
 		return nullptr;
 	}
 	return parseSymbolIC(tok, symbols, false);
@@ -209,7 +209,7 @@ Number* parseNumberIC(const StrVec& tokens, Index& i, SymMap& symbols) {
 	Number* num = dynamic_cast<Number*>(obj);
 	if (num == nullptr) {
 		delete obj;
-		parseError = err::obj_num;
+		parseError = err_nan;
 		return nullptr;
 	}
 	return num;
@@ -221,7 +221,7 @@ Set* parseSetIC(const StrVec& tokens, Index& i, SymMap& symbols) {
 	Set* set = dynamic_cast<Set*>(obj);
 	if (set == nullptr) {
 		delete obj;
-		parseError = err::obj_set;
+		parseError = err_nas;
 		return nullptr;
 	}
 	return set;
@@ -229,12 +229,12 @@ Set* parseSetIC(const StrVec& tokens, Index& i, SymMap& symbols) {
 
 Symbol* parseSymbolIC(const std::string& str, SymMap& symbols, bool fresh) {
 	if (str.length() > 1) {
-		parseError = err::long_symbol;
+		parseError = err_long;
 		return nullptr;
 	}
 	char c = str[0];
 	if (!(c >= 'a' && c <= 'z') && !(c >= 'A' && c <= 'Z')) {
-		parseError = err::bad_symbol;
+		parseError = err_char;
 		return nullptr;
 	}
 	return new Symbol(c, symbols, fresh);

@@ -8,8 +8,8 @@
 
 #include <iostream>
 
-namespace strings {
-	static const char* prompt = "spa> ";
+namespace {
+	const char* prompt = "spa> ";
 
 	const char* header =
 	" _____   _____   _____\n"
@@ -36,9 +36,9 @@ namespace strings {
 int main() {
 	char* line;
 	TheoremProver tp;
-	std::cout << strings::header << std::endl;
+	std::cout << header << std::endl;
 	for (;;) {
-		line = readline(strings::prompt);
+		line = readline(prompt);
 		if (line == nullptr) {
 			std::cout << std::endl;
 			break;
@@ -49,7 +49,7 @@ int main() {
 			if (tokens[0] == "quit" || tokens[0] == "exit") {
 				break;
 			} else if (tokens[0] == "help") {
-				std::cout << strings::help;
+				std::cout << help;
 			} else {
 				tp.dispatch(tokens);
 			}
