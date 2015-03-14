@@ -6,6 +6,8 @@
 //            Object
 // =============================================================================
 
+Object::~Object() {}
+
 std::ostream& operator<<(std::ostream& stream, const Object& obj) {
 	return obj.print(stream);
 }
@@ -14,6 +16,12 @@ std::ostream& operator<<(std::ostream& stream, const Object& obj) {
 //            Number
 // =============================================================================
 
+Object* Number::clone() const {
+	return cloneSelf();
+}
+
+ConcreteNumber::ConcreteNumber(int x) : _x(x) {}
+
 std::ostream& ConcreteNumber::print(std::ostream& s) const {
 	return s << _x;
 }
@@ -21,6 +29,9 @@ std::ostream& ConcreteNumber::print(std::ostream& s) const {
 Number* ConcreteNumber::cloneSelf() const {
 	return new ConcreteNumber(_x);
 }
+
+CompoundNumber::CompoundNumber(Type t, Number* a, Number* b)
+	: _type(t), _a(a), _b(b) {}
 
 CompoundNumber::~CompoundNumber() {
 	delete _a;
@@ -56,6 +67,12 @@ int CompoundNumber::getType(const std::string& s) {
 //            Set
 // =============================================================================
 
+Object* Set::clone() const {
+	return cloneSelf();
+}
+
+ConcreteSet::ConcreteSet(std::vector<Object*> items) : _items(items) {}
+
 Set* ConcreteSet::cloneSelf() const {
 	std::vector<Object*> v;
 	v.reserve(_items.size());
@@ -84,6 +101,31 @@ std::ostream& ConcreteSet::print(std::ostream& s) const {
 	}
 	return s << '}';
 }
+
+SpecialSet::SpecialSet(Type t) : _type(t) {}
+
+Set* SpecialSet::cloneSelf() const {
+	return new SpecialSet(_type);
+}
+
+std::ostream& SpecialSet::print(std::ostream& s) const {
+	switch(_type) {
+	case EMPTY: return s << "null";
+	case INTEGERS: return s << "ZZ";
+	case NATURALS: return s << "NN";
+	case SETS: return s << "SS";
+	}
+}
+
+int SpecialSet::getType(const std::string& s) {
+	if (s == "null") return EMPTY;
+	if (s == "ZZ") return INTEGERS;
+	if (s == "NN") return NATURALS;
+	if (s == "SS") return SETS;
+	return -1;
+}
+
+CompoundSet::CompoundSet(Type t, Set* a, Set* b) : _type(t), _a(a), _b(b) {}
 
 CompoundSet::~CompoundSet() {
 	delete _a;
@@ -115,36 +157,16 @@ int CompoundSet::getType(const std::string& s) {
 	return -1;
 }
 
-int SpecialSet::getType(const std::string& s) {
-	if (s == "null") return EMPTY;
-	if (s == "ZZ") return INTEGERS;
-	if (s == "NN") return NATURALS;
-	if (s == "SS") return SETS;
-	return -1;
-}
-
-Set* SpecialSet::cloneSelf() const {
-	return new SpecialSet(_type);
-}
-
-std::ostream& SpecialSet::print(std::ostream& s) const {
-	switch(_type) {
-	case EMPTY: return s << "null";
-	case INTEGERS: return s << "ZZ";
-	case NATURALS: return s << "NN";
-	case SETS: return s << "SS";
-	}
-}
-
 // =============================================================================
 //            Symbol
 // =============================================================================
 
-unsigned int Symbol::_count = 0;
-
-unsigned int Symbol::genUniqueId() {
-	return _count++;
+namespace {
+	unsigned int symbolCount = 0;
+	unsigned int genUniqueId() { return symbolCount++; }
 }
+
+Symbol::Symbol(char c) : _c(c), _id(genUniqueId()) {}
 
 Symbol::Symbol(char c, SymMap& symbols, bool fresh) : _c(c) {
 	if (!fresh) {
@@ -158,8 +180,14 @@ Symbol::Symbol(char c, SymMap& symbols, bool fresh) : _c(c) {
 	symbols[_c] = _id;
 }
 
+Symbol::Symbol(char c, unsigned int id) : _c(c),  _id(id) {}
+
 Symbol* Symbol::cloneSelf() const {
 	return new Symbol(_c, _id);
+}
+
+Object* Symbol::clone() const {
+	return cloneSelf();
 }
 
 std::ostream& Symbol::print(std::ostream& s) const {

@@ -18,7 +18,7 @@ public:
 	// (from Hofstaedter's GEB). MU means that the truth is unknown.
 	enum Value { FALSE = false, TRUE = true, MU };
 
-	virtual ~Sentence() {}
+	virtual ~Sentence();
 
 	// Creates a deep copy of the sentence.
 	virtual Sentence* clone() const = 0;
@@ -35,6 +35,10 @@ public:
 	// Prints a string representation of the sentence to the given stream.
 	virtual std::ostream& print(std::ostream& s) const = 0;
 	friend std::ostream& operator<<(std::ostream& stream, const Sentence& s);
+
+protected:
+	Sentence() {}
+	Sentence(const Sentence&) = delete;
 };
 
 // Logical sentences are the building blocks of the propositional calculus.
@@ -44,7 +48,10 @@ class Logical : public Sentence {
 public:
 	enum Type { AND, OR, IMPLIES, IFF };
 
-	Logical(Type t, Sentence* a, Sentence* b) : _type(t), _a(a), _b(b) {}
+	// Creates a new logical sentence that connects two propositions using the
+	// given logical operator type.
+	Logical(Type t, Sentence* a, Sentence* b);
+
 	virtual ~Logical();
 	virtual Sentence* clone() const;
 	virtual Value value() const;
@@ -81,7 +88,10 @@ class Relation : public Sentence {
 public:
 	enum Type { EQ, NEQ, LT, GT, LTE, GTE, NOTIN, IN, SUBSET };
 
-	Relation(Type t, Object* a, Object* b) : _type(t), _a(a), _b(b) {}
+	// Creates a new relation sentence that relates two objects by the given
+	// relation operator type.
+	Relation(Type t, Object* a, Object* b);
+
 	virtual ~Relation();
 	virtual Sentence* clone() const;
 	virtual Value value() const;
@@ -110,8 +120,7 @@ public:
 
 	// Creates an ordinary quantified statement of the given type with the
 	// supplied variable and the body, which should be an open sentence.
-	Quantified(Type t, Symbol* var, Sentence* body)
-		: _type(t), _var(var), _body(body) {}
+	Quantified(Type t, Symbol* var, Sentence* body);
 
 	// Creates a quantified statement using the domain shorthand, which
 	// restricts the values of the variable considered to a particular set.
@@ -128,12 +137,7 @@ public:
 
 private:
 	Type _type; // the quantifier type
-
-	// The bound variable. This doesn't really need to be a pointer, since it
-	// could be embedded directly in this object. However, using a pointer
-	// simplifies things and makes everything more consistent.
-	Symbol* _var;
-
+	Symbol* _var; // the bound variable
 	Sentence* _body; // the quantified open sentence
 };
 

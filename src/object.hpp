@@ -16,7 +16,7 @@ typedef std::map<char, unsigned int> SymMap;
 // and they can print themselves to output streams.
 class Object {
 public:
-	virtual ~Object() {}
+	virtual ~Object();
 
 	// Creates a deep copy of the object. The subclasses of Object implement
 	// this by calling a cloneSelf method, which returns a more specific
@@ -35,15 +35,14 @@ protected:
 // A number is some object that evaluates to a numerical value.
 class Number : public virtual Object {
 public:
-	virtual ~Number() {}
 	virtual Number* cloneSelf() const = 0;
-	virtual Object* clone() const { return cloneSelf(); }
+	virtual Object* clone() const;
 };
 
 // A concrete number is simply an integer.
 class ConcreteNumber : public Number {
 public:
-	explicit ConcreteNumber(int x) : _x(x) {}
+	explicit ConcreteNumber(int x);
 	virtual Number* cloneSelf() const;
 	virtual std::ostream& print(std::ostream& s) const;
 
@@ -56,7 +55,7 @@ class CompoundNumber : public Number {
 public:
 	enum Type { ADD, SUB, MUL };
 
-	CompoundNumber(Type t, Number* a, Number* b) : _type(t), _a(a), _b(b) {}
+	CompoundNumber(Type t, Number* a, Number* b);
 	virtual ~CompoundNumber();
 	virtual Number* cloneSelf() const;
 	virtual std::ostream& print(std::ostream& s) const;
@@ -73,15 +72,14 @@ private:
 // A set is a collection of objects. It may be finite or infinite.
 class Set : public virtual Object {
 public:
-	virtual ~Set() {}
 	virtual Set* cloneSelf() const = 0;
-	virtual Object* clone() const { return cloneSelf(); }
+	virtual Object* clone() const;
 };
 
 // A concrete set contains a finite list of objects.
 class ConcreteSet : public Set {
 public:
-	explicit ConcreteSet(std::vector<Object*> items) : _items(items) {}
+	explicit ConcreteSet(std::vector<Object*> items);
 	virtual ~ConcreteSet();
 	virtual Set* cloneSelf() const;
 	virtual std::ostream& print(std::ostream& s) const;
@@ -96,7 +94,7 @@ class SpecialSet : public Set {
 public:
 	enum Type { EMPTY, INTEGERS, NATURALS, SETS };
 
-	explicit SpecialSet(Type t) : _type(t) {}
+	explicit SpecialSet(Type t);
 	virtual Set* cloneSelf() const;
 	virtual std::ostream& print(std::ostream& s) const;
 
@@ -112,7 +110,7 @@ class CompoundSet : public Set {
 public:
 	enum Type { UNION, INTERSECT, DIFF };
 
-	CompoundSet(Type t, Set* a, Set* b) : _type(t), _a(a), _b(b) {}
+	CompoundSet(Type t, Set* a, Set* b);
 	virtual ~CompoundSet();
 	virtual Set* cloneSelf() const;
 	virtual std::ostream& print(std::ostream& s) const;
@@ -130,7 +128,7 @@ private:
 class Symbol : public Number, public Set {
 public:
 	// Creates a new symbol with a unique identifier.
-	explicit Symbol(char c) : _c(c), _id(genUniqueId()) {}
+	explicit Symbol(char c);
 
 	// Creates a new symbol in the given context. Fresh symbols always get
 	// unique identifiers. Non-fresh symbols (or rather, not-necessarily-fresh
@@ -140,25 +138,15 @@ public:
 	Symbol(char c, SymMap& symbols, bool fresh);
 
 	Symbol* cloneSelf() const;
-	virtual Object* clone() const { return cloneSelf(); }
+	virtual Object* clone() const;
 	virtual std::ostream& print(std::ostream& s) const;
-
-	// Symbols are equal if they have the same identifier.
-	bool operator==(const Symbol& s) const { return _id == s._id; }
 
 private:
 	// Creates a new symbol by reusing the given identifier.
-	Symbol(char c, unsigned int id) : _c(c),  _id(id) {}
-
-	// Generates a unique symbol identifier.
-	static unsigned int genUniqueId();
+	Symbol(char c, unsigned int id);
 
 	char _c; // the character used when printing
 	unsigned int _id; // the identifier
-
-	// The count stores the number of instances that have been created. It is
-	// used to generate unique identifiers.
-	static unsigned int _count;
 };
 
 #endif

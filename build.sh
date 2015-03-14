@@ -9,10 +9,7 @@ usage="usage: $name [-h] [-t] [-d]"
 
 # Compiler and common options.
 CC=clang++
-wno='-Wno-padded -Wmissing-variable-declarations -Wno-weak-vtables
--Wno-global-constructors -Wno-exit-time-destructors
--Wno-missing-variable-declarations -Wno-c++98-compat'
-options="-std=c++11 -Weverything -pedantic $wno"
+options="-std=c++11 -Weverything -pedantic -Wno-padded -Wno-c++98-compat"
 dist_opts='-DNDEBUG -Oz'
 debug_opts='-g'
 

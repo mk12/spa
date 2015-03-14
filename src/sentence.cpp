@@ -8,6 +8,12 @@
 #include <cassert>
 
 // =============================================================================
+//            Sentence
+// =============================================================================
+
+Sentence::~Sentence() {}
+
+// =============================================================================
 //            Logical
 // =============================================================================
 
@@ -18,6 +24,8 @@ std::ostream& operator<<(std::ostream& stream, const Sentence& s) {
 // =============================================================================
 //            Logical
 // =============================================================================
+
+Logical::Logical(Type t, Sentence* a, Sentence* b) : _type(t), _a(a), _b(b) {}
 
 Logical::~Logical() {
 	delete _a;
@@ -116,6 +124,8 @@ int Logical::getType(const std::string& s) {
 //            Relation
 // =============================================================================
 
+Relation::Relation(Type t, Object* a, Object* b) : _type(t), _a(a), _b(b) {}
+
 Relation::~Relation() {
 	delete _a;
 	delete _b;
@@ -193,6 +203,13 @@ int Relation::getType(const std::string& s) {
 // =============================================================================
 //            Quantified
 // =============================================================================
+
+// The bound variable _var doesn't really need to be a pointer, since it could
+// be embedded directly in the Quantified object. However, using a pointer
+// simplifies things and makes everything more consistent.
+
+Quantified::Quantified(Type t, Symbol* var, Sentence* body)
+	: _type(t), _var(var), _body(body) {}
 
 Quantified::Quantified(Type t, Symbol* var, Set* domain, Sentence* body)
 	: _type(t), _var(var) {
