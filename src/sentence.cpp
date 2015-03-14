@@ -213,7 +213,7 @@ Quantified::Quantified(Type t, Symbol* var, Sentence* body)
 	: _type(t), _var(var), _body(body) {}
 
 Quantified::Quantified(Type t, Symbol* var, Set* domain, Sentence* body)
-	: _type(t), _var(var) {
+		: _type(t), _var(var) {
 	_body = new Logical(
 		(_type == FORALL) ? Logical::IMPLIES : Logical::AND,
 		new Relation(Relation::IN, var->clone(), domain),

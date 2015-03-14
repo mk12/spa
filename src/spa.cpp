@@ -63,7 +63,12 @@ static bool dispatch(const StrVec& tokens, TheoremProver& tp) {
 			} else {
 				error("no theorem loaded");
 			}
+		} else if (cmd == "given" || cmd == "givens") {
+			tp.printGivens();
+		} else if (cmd == "goal") {
+			tp.printGoal();
 		} else if (cmd == "stack") {
+			tp.printStack();
 		} else if (cmd == "print") {
 		} else {
 			error(bad_cmd);

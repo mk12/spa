@@ -3,12 +3,13 @@
 #ifndef PROVER_H
 #define PROVER_H
 
-#include <stack>
+#include <vector>
 
 class Sentence;
 
-// A theorem prover's job is (not surprisingly) to prove a single theorem. It
-// maintains a stack of goal provers......
+// A theorem prover (surprise) proves theorems. It does this by creating and
+// navigating a tree of given/goal pairs which break down the proof of the
+// theorem into many subgoals.
 class TheoremProver {
 public:
 	// Creates a new theorem prover, initially with no theorem loaded.
@@ -22,15 +23,21 @@ public:
 	// Returns true if a theorem is currently loaded.
 	bool hasTheorem() const;
 
-	// Prints a string representation of the theorem to stdout.
+	// Prints a string representation of the theorem (the ultimate goal being
+	// proved), the givens (facts that can be used to prove the goal), the goal
+	// (the current subgoal of the theorem), or the stack (structure used to
+	// decompose the theorem) to stdout. Does nothing if no theorem is loaded.
 	void printTheorem() const;
+	void printGivens() const;
+	void printGoal() const;
+	void printStack() const;
 
 private:
-	Sentence* _theorem; // the theorem being proved
+	class Node;
 
-	struct Node;
 	Node* _root; // the root of the given/goal tree
-	std::stack<Node*> _stack; // the stack used for depth-first traversal
+	std::vector<Node*> _stack; // the stack used for depth-first traversal
+	std::vector<Sentence*> _givens; // the stack of currently available givens
 };
 
 #endif
