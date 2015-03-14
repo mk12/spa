@@ -16,8 +16,6 @@ typedef std::map<char, unsigned int> SymMap;
 // and they can print themselves to output streams.
 class Object {
 public:
-	Object() {}
-	Object(const Object&) = delete;
 	virtual ~Object() {}
 
 	// Creates a deep copy of the object. The subclasses of Object implement
@@ -28,6 +26,10 @@ public:
 	// Prints a string representation of the object to the given stream.
 	virtual std::ostream& print(std::ostream& s) const = 0;
 	friend std::ostream& operator<<(std::ostream& stream, const Object& obj);
+
+protected:
+	Object() {}
+	Object(const Object&) = delete;
 };
 
 // A number is some object that evaluates to a numerical value.
@@ -43,7 +45,7 @@ class ConcreteNumber : public Number {
 public:
 	explicit ConcreteNumber(int x) : _x(x) {}
 	virtual Number* cloneSelf() const;
-	virtual std::ostream& print(std::ostream& s) const { return s << _x; }
+	virtual std::ostream& print(std::ostream& s) const;
 
 private:
 	int _x; // the integer this object represents
@@ -55,7 +57,7 @@ public:
 	enum Type { ADD, SUB, MUL };
 
 	CompoundNumber(Type t, Number* a, Number* b) : _type(t), _a(a), _b(b) {}
-	virtual ~CompoundNumber() { delete _a; delete _b; }
+	virtual ~CompoundNumber();
 	virtual Number* cloneSelf() const;
 	virtual std::ostream& print(std::ostream& s) const;
 
@@ -111,7 +113,7 @@ public:
 	enum Type { UNION, INTERSECT, DIFF };
 
 	CompoundSet(Type t, Set* a, Set* b) : _type(t), _a(a), _b(b) {}
-	virtual ~CompoundSet() { delete _a; delete _b; }
+	virtual ~CompoundSet();
 	virtual Set* cloneSelf() const;
 	virtual std::ostream& print(std::ostream& s) const;
 
@@ -139,7 +141,7 @@ public:
 
 	Symbol* cloneSelf() const;
 	virtual Object* clone() const { return cloneSelf(); }
-	virtual std::ostream& print(std::ostream& s) const { return s << _c; }
+	virtual std::ostream& print(std::ostream& s) const;
 
 	// Symbols are equal if they have the same identifier.
 	bool operator==(const Symbol& s) const { return _id == s._id; }
@@ -149,7 +151,7 @@ private:
 	Symbol(char c, unsigned int id) : _c(c),  _id(id) {}
 
 	// Generates a unique symbol identifier.
-	static unsigned int genUniqueId() { return _count++; }
+	static unsigned int genUniqueId();
 
 	char _c; // the character used when printing
 	unsigned int _id; // the identifier

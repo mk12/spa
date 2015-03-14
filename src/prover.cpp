@@ -2,10 +2,18 @@
 
 #include "prover.hpp"
 
+#include <iostream>
+
+// ...
+struct Node {
+	Sentence* given;
+	Sentence* goal;
+	Node* child;
+	Node* child2;
+};
+
 TheoremProver::~TheoremProver() {
-	if (_theorem != nullptr) {
-		delete _theorem;
-	}
+	delete _theorem;
 }
 
 static void error(const std::string& s) {

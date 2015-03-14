@@ -14,8 +14,17 @@ std::ostream& operator<<(std::ostream& stream, const Object& obj) {
 //            Number
 // =============================================================================
 
+std::ostream& ConcreteNumber::print(std::ostream& s) const {
+	return s << _x;
+}
+
 Number* ConcreteNumber::cloneSelf() const {
 	return new ConcreteNumber(_x);
+}
+
+CompoundNumber::~CompoundNumber() {
+	delete _a;
+	delete _b;
 }
 
 Number* CompoundNumber::cloneSelf() const {
@@ -76,6 +85,11 @@ std::ostream& ConcreteSet::print(std::ostream& s) const {
 	return s << '}';
 }
 
+CompoundSet::~CompoundSet() {
+	delete _a;
+	delete _b;
+}
+
 Set* CompoundSet::cloneSelf() const {
 	return new CompoundSet(_type, _a->cloneSelf(), _b->cloneSelf());
 }
@@ -128,6 +142,10 @@ std::ostream& SpecialSet::print(std::ostream& s) const {
 
 unsigned int Symbol::_count = 0;
 
+unsigned int Symbol::genUniqueId() {
+	return _count++;
+}
+
 Symbol::Symbol(char c, SymMap& symbols, bool fresh) : _c(c) {
 	if (!fresh) {
 		auto iter = symbols.find(_c);
@@ -142,4 +160,8 @@ Symbol::Symbol(char c, SymMap& symbols, bool fresh) : _c(c) {
 
 Symbol* Symbol::cloneSelf() const {
 	return new Symbol(_c, _id);
+}
+
+std::ostream& Symbol::print(std::ostream& s) const {
+	return s << _c;
 }

@@ -3,9 +3,11 @@
 #ifndef SENTENCE_H
 #define SENTENCE_H
 
-#include "object.hpp"
-
 #include <string>
+
+class Object;
+class Set;
+class Symbol;
 
 // A sentence, or proposition, is a Boolean-valued formula with no free
 // variables. The sentence expresses something concrete which must be either
@@ -43,7 +45,7 @@ public:
 	enum Type { AND, OR, IMPLIES, IFF };
 
 	Logical(Type t, Sentence* a, Sentence* b) : _type(t), _a(a), _b(b) {}
-	virtual ~Logical() { delete _a; delete _b; }
+	virtual ~Logical();
 	virtual Sentence* clone() const;
 	virtual Value value() const;
 	virtual void negate();
@@ -80,7 +82,7 @@ public:
 	enum Type { EQ, NEQ, LT, GT, LTE, GTE, NOTIN, IN, SUBSET };
 
 	Relation(Type t, Object* a, Object* b) : _type(t), _a(a), _b(b) {}
-	virtual ~Relation() { delete _a; delete _b; }
+	virtual ~Relation();
 	virtual Sentence* clone() const;
 	virtual Value value() const;
 	virtual void negate();
@@ -115,7 +117,7 @@ public:
 	// restricts the values of the variable considered to a particular set.
 	Quantified(Type t, Symbol* var, Set* domain, Sentence* body);
 
-	virtual ~Quantified() { delete _body; }
+	virtual ~Quantified();
 	virtual Sentence* clone() const;
 	virtual Value value() const;
 	virtual void negate();

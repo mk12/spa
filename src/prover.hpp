@@ -4,33 +4,30 @@
 #define PROVER_H
 
 #include "parse.hpp"
-#include "sentence.hpp"
 
 #include <stack>
 #include <vector>
 
-/*
-class GoalProver {
-public:
+struct Node;
+class Sentence;
 
-private:
-	// Sentence* _goal;
-	std::vector<Sentence*> _givens; // ...
-	std::vector<Sentence*> _goals; // ...
-};
-*/
-
+// A theorem prover's job is (not surprisingly) to prove a single theorem. It
+// maintains a stack of goal provers......
 class TheoremProver {
 public:
 	TheoremProver() : _theorem(nullptr) {}
 	~TheoremProver();
 
-	// ...
+	// Performs the appropriate action for the given tokenized user input.
 	void dispatch(const StrVec& tokens);
 
 private:
-	Sentence* _theorem; // ...
-	// std::stack<GoalProver> _stack; // ...
+	Sentence* _theorem; // the theorem being proved
+	Node* _root;
+	std::stack<Node*> _stack;
 };
+
+// stack for traversal
+
 
 #endif

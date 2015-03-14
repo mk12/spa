@@ -2,6 +2,8 @@
 
 #include "sentence.hpp"
 
+#include "object.hpp"
+
 #include <algorithm>
 #include <cassert>
 
@@ -16,6 +18,11 @@ std::ostream& operator<<(std::ostream& stream, const Sentence& s) {
 // =============================================================================
 //            Logical
 // =============================================================================
+
+Logical::~Logical() {
+	delete _a;
+	delete _b;
+}
 
 Sentence* Logical::clone() const {
 	return new Logical(_type, _a->clone(), _b->clone());
@@ -109,6 +116,11 @@ int Logical::getType(const std::string& s) {
 //            Relation
 // =============================================================================
 
+Relation::~Relation() {
+	delete _a;
+	delete _b;
+}
+
 Sentence* Relation::clone() const {
 	return new Relation(_type, _a->clone(), _b->clone());
 }
@@ -189,6 +201,11 @@ Quantified::Quantified(Type t, Symbol* var, Set* domain, Sentence* body)
 		new Relation(Relation::IN, var->clone(), domain),
 		body
 	);
+}
+
+Quantified::~Quantified() {
+	delete _var;
+	delete _body;
 }
 
 Sentence* Quantified::clone() const {

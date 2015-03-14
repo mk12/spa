@@ -9,7 +9,7 @@
 #include <vector>
 
 typedef std::vector<std::string> StrVec;
-typedef std::vector<std::string>::size_type Index;
+typedef StrVec::size_type Index;
 
 // The parsing functions always store an error message in this string when they
 // fail, before returning null.
