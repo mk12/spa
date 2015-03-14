@@ -5,6 +5,7 @@
 #include "object.hpp"
 
 #include <algorithm>
+
 #include <cassert>
 
 // =============================================================================
