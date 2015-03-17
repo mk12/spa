@@ -25,11 +25,11 @@ namespace {
 	"help   -  show this help message\n"
 	"quit   -  quit the program\n"
 	"prove  -  set the theorem to prove\n"
-	"thm    -  show the current theorem\n"
 	"go     -  go to the next step\n"
+	"thm    -  show the current theorem\n"
 	"given  -  show the current givens\n"
 	"goal   -  show the current goal\n"
-	"stack  -  show the entire proof stack\n"
+	"tree   -  show the entire proof tree\n"
 	"print  -  print the formal proof\n\n";
 
 	const char* bad_cmd = "invalid command";
@@ -48,32 +48,36 @@ static bool dispatch(const StrVec& tokens, TheoremProver& tp) {
 		return false;
 	}
 	const std::string cmd = tokens[0];
-	bool prove = cmd == "prove";
 	if (size == 1) {
 		if (cmd == "quit" || cmd == "exit") {
 			return true;
 		}
-		if (prove) {
+		if (cmd == "prove") {
 			error("expecting theorem");
 		} else if (cmd == "help") {
 			std::cout << help;
-		} else if (cmd == "thm") {
-			if (tp.hasTheorem()) {
-				tp.printTheorem();
-			} else {
+		} else if (cmd == "go" || cmd == "thm" || cmd == "given"
+				|| cmd == "givens" || cmd == "goal" || cmd == "tree"
+				|| cmd == "print") {
+			if (!tp.hasTheorem()) {
 				error("no theorem loaded");
+				return false;
 			}
-		} else if (cmd == "given" || cmd == "givens") {
-			tp.printGivens();
-		} else if (cmd == "goal") {
-			tp.printGoal();
-		} else if (cmd == "stack") {
-			tp.printStack();
-		} else if (cmd == "print") {
+			if (cmd == "go") {
+			} else if (cmd == "thm") {
+				tp.printTheorem();
+			} else if (cmd == "given" || cmd == "givens") {
+				tp.printGivens();
+			} else if (cmd == "goal") {
+				tp.printGoal();
+			} else if (cmd == "tree") {
+				tp.printTree();
+			} else if (cmd == "print") {
+			}
 		} else {
 			error(bad_cmd);
 		}
-	} else if (prove) {
+	} else if (cmd == "prove") {
 		Index i = 1;
 		Sentence* thm = parseSentence(tokens, i);
 		if (thm == nullptr) {

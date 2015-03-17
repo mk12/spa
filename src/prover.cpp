@@ -34,21 +34,27 @@ public:
 	~Node();
 
 	// Accessors for the given, goal, and children of the node.
-	Sentence* given() const { return _given; }
-	Sentence* goal() const { return _goal; }
 	Node* primaryChild() const { return _a; }
 	Node* secodaryChild() const { return _b; }
 
 	// Assumes this is a leaf node. Adds one or two children to the node.
 	void extend(Node* a, Node* b = nullptr);
 
+	// Returns true if this node has a given.
+	bool hasGiven() const { return _given != nullptr; }
+
+	// Prints the given/goal of the node to stdout, optionally including the
+	// label. Does nothing if the given is null (the goal cannot be null).
+	void printGiven(bool label) const;
+	void printGoal(bool label) const;
+
 	// Pretty-prints the tree to stdout.
-	void print() const;
+	void printTree() const;
 
 private:
 	// Prints a section of the ASCII tree, and outputs the legend information of
 	// this node to the given stream.
-	void printHelp(char label, unsigned int indent, std::ostream& legend) const;
+	void printHelp(int indent, std::ostream& legend) const;
 
 	// Calculates the maximum depth of this tree.
 	int maxDepth() const;
@@ -57,10 +63,16 @@ private:
 	Sentence* _goal; // the current goal
 	Node* _a; // the primary child, or null
 	Node* _b; // the secondary child, or null
+	char _label; // used for printing
 };
 
+namespace {
+	char currentLabel = 'A';
+	char genUniqueLabel() { return currentLabel++; }
+}
+
 TheoremProver::Node::Node(Sentence* given, Sentence* goal, Node* a, Node* b)
-	: _given(given), _goal(goal), _a(a), _b(b) {
+	: _given(given), _goal(goal), _a(a), _b(b), _label(genUniqueLabel()) {
 	assert(goal != nullptr);
 }
 
@@ -78,12 +90,29 @@ void TheoremProver::Node::extend(Node* a, Node* b) {
 	_b = b;
 }
 
-void TheoremProver::Node::print() const {
+void TheoremProver::Node::printGiven(bool label) const {
+	if (_given != nullptr) {
+		if (label) {
+			std::cout << '[' << _label << "] ";
+		}
+		std::cout << *_given << std::endl;
+	}
+}
+
+void TheoremProver::Node::printGoal(bool label) const {
+	assert(_goal != nullptr);
+	if (label) {
+		std::cout << '[' << _label << "] ";
+	}
+	std::cout << *_goal << std::endl;
+}
+
+void TheoremProver::Node::printTree() const {
 	int depth = maxDepth();
 	// Compute the indent level for the first row. By inspection I discovered
 	// the pattern to be 2^(n-2) spaces followed by 2^(n-2)-1 underscores, where
 	// n is the maximum depth of the tree.
-	unsigned int indent = 0;
+	int indent = 0;
 	if (depth > 1) {
 		indent = 1;
 		for (int i = 0; i < depth - 2; ++i) {
@@ -93,8 +122,6 @@ void TheoremProver::Node::print() const {
 	// We print the legend information to a separate stream (which gets printed
 	// at the end) to avoid doing two traversals.
 	std::ostringstream legend;
-	// Each node has an alphabetical label in the tree.
-	char label = 'A';
 	// Do a breadth-first traversal.
 	std::queue<const Node*> queue;
 	queue.push(this);
@@ -103,8 +130,7 @@ void TheoremProver::Node::print() const {
 		for (unsigned int i = 0; i < sz; ++i) {
 			const Node* n = queue.front();
 			queue.pop();
-			n->printHelp(label, indent, legend);
-			++label;
+			n->printHelp(indent, legend);
 			if (n->_a != nullptr) {
 				queue.push(n->_a);
 			}
@@ -118,12 +144,12 @@ void TheoremProver::Node::print() const {
 	std::cout << std::endl << legend.str();
 }
 
-void TheoremProver::Node::printHelp(
-		char label, unsigned int indent, std::ostream& legend) const {
-	std::string spaces(indent, ' ');
-	std::string scores(std::max(0u, indent - 1), '_');
-	std::cout << spaces << scores << label << scores << spaces;
-	legend << '[' << label << "] " << *_goal << std::endl;
+void TheoremProver::Node::printHelp(int indent, std::ostream& legend) const {
+	unsigned int ind = static_cast<unsigned int>(indent);
+	std::string spaces(ind, ' ');
+	std::string scores(std::max(0u, ind), '_');
+	std::cout << spaces << scores << _label << scores << spaces;
+	legend << '[' << _label << "] " << *_goal << std::endl;
 }
 
 int TheoremProver::Node::maxDepth() const {
@@ -144,37 +170,55 @@ TheoremProver::~TheoremProver() {
 
 void TheoremProver::setTheorem(Sentence* s) {
 	delete _root;
-	_stack.clear();
-	_givens.clear();
-	_root = new Node(nullptr, s);
-	_stack.push_back(_root);
+	// This is why we are using vectors instead of stacks (clear method).
+	_dfs.clear();
+	_lineage.clear();
+	if (s == nullptr) {
+		_root = nullptr;
+	} else {
+		_root = new Node(nullptr, s);
+		_dfs.push_back(_root);
+		_lineage.push_back(_root);
+	}
 }
 
 bool TheoremProver::hasTheorem() const {
 	return _root != nullptr;
 }
 
+bool TheoremProver::advance() const {
+}
+
 void TheoremProver::printTheorem() const {
 	if (hasTheorem()) {
-		std::cout << *_root->goal() << std::endl;
+		_root->printGoal(false);
 	}
 }
 
 void TheoremProver::printGivens() const {
-	int i = 1;
-	for (const Sentence* given: _givens) {
-		std::cout << '[' << i++ << "] " << *given << std::endl;
+	bool empty = true;
+	for (const Node* n: _lineage) {
+		empty = empty || n->hasGiven();
+		n->printGiven(true);
+	}
+	if (empty) {
+		std::cout << "(no givens)" << std::endl;
 	}
 }
 
 void TheoremProver::printGoal() const {
 	if (hasTheorem()) {
-		std::cout << *_stack.back()->goal() << std::endl;
+		currentNode()->printGoal(true);
 	}
 }
 
-void TheoremProver::printStack() const {
+void TheoremProver::printTree() const {
 	if (hasTheorem()) {
-		_root->print();
+		_root->printTree();
 	}
+}
+
+TheoremProver::Node* TheoremProver::currentNode() const {
+	assert(_root != nullptr);
+	return _dfs.back();
 }
