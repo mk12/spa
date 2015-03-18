@@ -64,6 +64,10 @@ static bool dispatch(const StrVec& tokens, TheoremProver& tp) {
 				return false;
 			}
 			if (cmd == "go") {
+				// TODO: is a single go command enough? 2 things...
+				// - decompose goal automatically or by option
+				// - deduce new given
+				// - others?
 			} else if (cmd == "thm") {
 				tp.printTheorem();
 			} else if (cmd == "given" || cmd == "givens") {
@@ -73,6 +77,7 @@ static bool dispatch(const StrVec& tokens, TheoremProver& tp) {
 			} else if (cmd == "tree") {
 				tp.printTree();
 			} else if (cmd == "print") {
+				// TODO: should I get rid of this?
 			}
 		} else {
 			error(bad_cmd);
