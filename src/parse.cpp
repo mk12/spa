@@ -70,6 +70,12 @@ Sentence* parseSentenceIC(const StrVec& tokens, Index& i, SymMap& symbols) {
 	EXPECT("(");
 	CHECK_EOI();
 	const std::string tok = tokens[i++];
+	if (tok == "not") {
+		Sentence* p = parseSentenceIC(tokens, i, symbols);
+		if (p == nullptr) return nullptr;
+		p->negate();
+		return p;
+	}
 	int type = Logical::getType(tok);
 	if (type != -1) {
 		Sentence* a = parseSentenceIC(tokens, i, symbols);
