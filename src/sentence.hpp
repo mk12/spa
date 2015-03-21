@@ -6,8 +6,28 @@
 #include <string>
 
 class Object;
+class Sentence;
 class Set;
 class Symbol;
+
+// A decomp stores information about sentence decomposition. It breaks down a
+// parent sentence into one equivalent goal (A) or two subgoals (A and B). Each
+// subgoal can optionally include a given (a fact to be used in the proof).
+struct Decomp {
+	std::string name; // the type of decomposition
+	Sentence* givenA; // first given, or null
+	Sentence* goalA; // first goal
+	Sentence* givenB; // second given, or null
+	Sentence* goalB; // second goal, or null
+};
+
+// A deduct stores information about sentence deduction. It consists of
+// conclusion (the thing being deduced) and an optional hypothesis, which is
+// required to be proved before assuming the conclusion.
+struct Deduct {
+	Sentence* hypothesis; // the requirement, or null
+	Sentence* conclusion; // the deduced sentence
+};
 
 // A sentence, or proposition, is a Boolean-valued formula with no free
 // variables. The sentence expresses something concrete which must be either
@@ -31,6 +51,12 @@ public:
 	// negation as far as possible and try to express the result in a positive
 	// form, rather than simply wrapping the whole sentence in a logical NOT.
 	virtual void negate() = 0;
+
+	// Returns a the possible decompositions of the sentence (possibly none).
+	// virtual std::vector<Decomp> decompose() const = 0;
+
+	// Returns the possible deductions from this sentence (possible none).
+	// virtual std::vector<Deduct> deduce() const = 0;
 
 	// Prints a string representation of the sentence to the given stream.
 	virtual std::ostream& print(std::ostream& s) const = 0;
@@ -57,6 +83,12 @@ public:
 	virtual Value value() const;
 	virtual void negate();
 	virtual std::ostream& print(std::ostream& s) const;
+
+	// FIXME: These three don't need to be public. They might not even need to
+	// be separate methods. Although contrapostive is both a decomposition and a
+	// deduction, so maybe it should stay separate.
+	// TODO: consider the visibility of all things currently declared public --
+	// especially the expand* methods.
 
 	// Assumes the type is IMPLIES. Changes the implication "A implies B" to the
 	// equivalent sentence "not B implies not A", known as the contrapositive.
@@ -86,11 +118,12 @@ private:
 // far too many classes otherwise.
 class Relation : public Sentence {
 public:
-	enum Type { EQ, NEQ, LT, GT, LTE, GTE, NOTIN, IN, SUBSET };
+	enum Type { EQ, LT, LTE, SEQ, SUB, SUBE, IN, DIV };
 
 	// Creates a new relation sentence that relates two objects by the given
-	// relation operator type.
-	Relation(Type t, Object* a, Object* b);
+	// relation operator type. If positive is false, then the sentence states
+	// the negative relation (for example, <= becomes >).
+	Relation(Type t, bool positive, Object* a, Object* b);
 
 	virtual ~Relation();
 	virtual Sentence* clone() const;
@@ -98,15 +131,17 @@ public:
 	virtual void negate();
 	virtual std::ostream& print(std::ostream& s) const;
 
+	// TODO: not so simple anymore
 	// Assumes the type is SUBSET. Expands the sentence into the sentence
 	// "forall x in A: x in B", which is the definition of the subset relation.
-	Sentence* expandSubset();
+	// Sentence* expandSubset();
 
 	// Returns the operation type specified by the string, or -1 otherwise.
-	static int getType(const std::string& s);
+	static std::pair<int, bool> getType(const std::string& s);
 
 private:
 	Type _type; // the operation type
+	bool _want; // negation toggles this
 	Object* _a; // the first operand
 	Object* _b; // the second operand
 };

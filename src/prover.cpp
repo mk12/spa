@@ -40,7 +40,7 @@ public:
 	Node* secodaryChild() const { return _b; }
 
 	// Assumes this is a leaf node. Adds one or two children to the node.
-	void extend(Node* a, Node* b = nullptr);
+	void decompose(Node* a, Node* b = nullptr);
 
 	// Adds a given to the node.
 	void deduce(Sentence* g);
@@ -94,7 +94,7 @@ TheoremProver::Node::~Node() {
 	delete _b;
 }
 
-void TheoremProver::Node::extend(Node* a, Node* b) {
+void TheoremProver::Node::decompose(Node* a, Node* b) {
 	assert(_a == nullptr);
 	assert(_b == nullptr);
 	_a = a;

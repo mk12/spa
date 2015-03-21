@@ -67,6 +67,8 @@ static bool dispatch(const StrVec& tokens, TheoremProver& tp) {
 				// TODO: is a single go command enough? 2 things...
 				// - decompose goal automatically or by option
 				// - deduce new given
+				// - do these two overlap?
+				// - decompose goal / use givens
 				// - others?
 			} else if (cmd == "thm") {
 				tp.printTheorem();

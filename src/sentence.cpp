@@ -5,6 +5,7 @@
 #include "object.hpp"
 
 #include <algorithm>
+#include <utility>
 
 #include <cassert>
 
@@ -13,10 +14,6 @@
 // =============================================================================
 
 Sentence::~Sentence() {}
-
-// =============================================================================
-//            Logical
-// =============================================================================
 
 std::ostream& operator<<(std::ostream& stream, const Sentence& s) {
 	return s.print(stream);
@@ -125,7 +122,8 @@ int Logical::getType(const std::string& s) {
 //            Relation
 // =============================================================================
 
-Relation::Relation(Type t, Object* a, Object* b) : _type(t), _a(a), _b(b) {}
+Relation::Relation(Type t, bool positive, Object* a, Object* b)
+	: _type(t), _want(positive), _a(a), _b(b) {}
 
 Relation::~Relation() {
 	delete _a;
@@ -133,7 +131,7 @@ Relation::~Relation() {
 }
 
 Sentence* Relation::clone() const {
-	return new Relation(_type, _a->clone(), _b->clone());
+	return new Relation(_type, _want, _a->clone(), _b->clone());
 }
 
 Sentence::Value Relation::value() const {
@@ -141,34 +139,33 @@ Sentence::Value Relation::value() const {
 }
 
 void Relation::negate() {
-	switch (_type) {
-	case EQ: _type = NEQ; break;
-	case NEQ: _type = EQ; break;
-	case LT: _type = GTE; break;
-	case GT: _type = LTE; break;
-	case LTE: _type = GT; break;
-	case GTE: _type = LT; break;
-	case IN: _type = NOTIN; break;
-	case NOTIN: _type = IN; break;
-	case SUBSET:
-		expandSubset();
-		negate();
-		break;
-	}
+	_want = !_want;
 }
 
 std::ostream& Relation::print(std::ostream& s) const {
 	s << '(';
-	switch (_type) {
-	case EQ: s << '='; break;
-	case NEQ: s << "!="; break;
-	case LT: s << '<'; break;
-	case GT: s << '>'; break;
-	case LTE: s << "<="; break;
-	case GTE: s << ">="; break;
-	case IN: s << "in"; break;
-	case NOTIN: s << "notin"; break;
-	case SUBSET: s << "subset"; break;
+	if (_want) {
+		switch (_type) {
+		case EQ: s << '='; break;
+		case LT: s << '<'; break;
+		case LTE: s << "<="; break;
+		case SEQ: s << "s="; break;
+		case SUB: s << "sub"; break;
+		case SUBE: s << "sube"; break;
+		case IN: s << "in"; break;
+		case DIV: s << "div"; break;
+		}
+	} else {
+		switch (_type) {
+		case EQ: s << "!="; break;
+		case LT: s << ">="; break;
+		case LTE: s << ">"; break;
+		case SEQ: s << "s!="; break;
+		case SUB: s << "supe"; break;
+		case SUBE: s << "sup"; break;
+		case IN: s << "notin"; break;
+		case DIV: s << "notdiv"; break;
+		}
 	}
 	s << ' ';
 	_a->print(s);
@@ -177,7 +174,9 @@ std::ostream& Relation::print(std::ostream& s) const {
 	return s << ')';
 }
 
+/*
 Sentence* Relation::expandSubset() {
+	// FIXME: _want
 	assert(_type == SUBSET);
 	Symbol* var = new Symbol('x');
 	return new Quantified(
@@ -187,18 +186,26 @@ Sentence* Relation::expandSubset() {
 		new Relation(Relation::IN, var->cloneSelf(), _b->clone())
 	);
 }
+*/
 
-int Relation::getType(const std::string& s) {
-	if (s == "=") return EQ;
-	if (s == "!=") return NEQ;
-	if (s == "<") return LT;
-	if (s == ">") return GT;
-	if (s == "<=") return LTE;
-	if (s == ">=") return GTE;
-	if (s == "in") return IN;
-	if (s == "notin") return NOTIN;
-	if (s == "subset") return SUBSET;
-	return -1;
+std::pair<int, bool> Relation::getType(const std::string& s) {
+	if (s == "=") return {EQ, true};
+	if (s == "!=") return {EQ, false};
+	if (s == "<") return {LT, true};
+	if (s == ">=") return {LT, false};
+	if (s == "<=") return {LTE, true};
+	if (s == ">") return {LTE, false};
+	if (s == "s=") return {SEQ, true};
+	if (s == "s!=") return {SEQ, false};
+	if (s == "sub") return {SUB, true};
+	if (s == "supe") return {SUB, false};
+	if (s == "sube") return {SUBE, true};
+	if (s == "sup") return {SUBE, false};
+	if (s == "in") return {IN, true};
+	if (s == "notin") return {IN, false};
+	if (s == "div") return {DIV, true};
+	if (s == "notdiv") return {DIV, false};
+	return {-1, true};
 }
 
 // =============================================================================
@@ -216,7 +223,7 @@ Quantified::Quantified(Type t, Symbol* var, Set* domain, Sentence* body)
 		: _type(t), _var(var) {
 	_body = new Logical(
 		(_type == FORALL) ? Logical::IMPLIES : Logical::AND,
-		new Relation(Relation::IN, var->clone(), domain),
+		new Relation(Relation::IN, true, var->clone(), domain),
 		body
 	);
 }

@@ -84,13 +84,13 @@ Sentence* parseSentenceIC(const StrVec& tokens, Index& i, SymMap& symbols) {
 		if (b == nullptr) { delete a; return nullptr; }
 		RET_PAREN(new Logical(static_cast<Logical::Type>(type), a, b));
 	}
-	type = Relation::getType(tok);
-	if (type != -1) {
+	auto rtype = Relation::getType(tok);
+	if (rtype.first != -1) {
 		Object* a = parseObjectIC(tokens, i, symbols);
 		if (a == nullptr) return nullptr;
 		Object* b = parseObjectIC(tokens, i, symbols);
 		if (b == nullptr) { delete a; return nullptr; }
-		RET_PAREN(new Relation(static_cast<Relation::Type>(type), a, b));
+		RET_PAREN(new Relation(static_cast<Relation::Type>(rtype.first), rtype.second, a, b));
 	}
 	type = Quantified::getType(tok);
 	if (type != -1) {
