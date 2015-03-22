@@ -42,7 +42,7 @@ namespace {
 
 // Prints an error message to stderr.
 static void error(const char* s) {
-	std::cerr << "error: " << s << std::endl;
+	std::cerr << "error: " << s << '\n';
 }
 
 // Performs the appropriate action for the given tokenized user input. Does
@@ -124,13 +124,13 @@ static bool dispatch(const StrVec& tokens, TheoremProver& tp) {
 int main() {
 	char* line;
 	TheoremProver tp;
-	std::cout << header << std::endl;
+	std::cout << header << '\n';
 	for (;;) {
 		line = readline(prompt);
 		if (line == nullptr) {
 			// This occurs on EOF, so print a newline before quitting.
 			// Otherwise, the shell prompt will appear on the same line.
-			std::cout << std::endl;
+			std::cout << '\n';
 			break;
 		}
 		StrVec tokens = tokenize(line);

@@ -115,7 +115,7 @@ void TheoremProver::Node::printGoal(bool label) const {
 	if (label) {
 		std::cout << '[' << _label << "] ";
 	}
-	std::cout << *_goal << std::endl;
+	std::cout << *_goal << '\n';
 }
 
 void TheoremProver::Node::printGivens(bool label) const {
@@ -132,7 +132,7 @@ void TheoremProver::Node::printGivens(bool label) const {
 					std::cout << "    ";
 				}
 			}
-			std::cout << *g << std::endl;
+			std::cout << *g << '\n';
 		}
 	}
 }
@@ -169,9 +169,9 @@ void TheoremProver::Node::printTree() const {
 			}
 		}
 		indent /= 2;
-		std::cout << std::endl;
+		std::cout << '\n';
 	}
-	std::cout << std::endl << legend.str();
+	std::cout << '\n' << legend.str();
 }
 
 void TheoremProver::Node::printHelp(int indent, std::ostream& legend) const {
@@ -179,7 +179,7 @@ void TheoremProver::Node::printHelp(int indent, std::ostream& legend) const {
 	std::string spaces(ind, ' ');
 	std::string scores(std::max(0u, ind), '_');
 	std::cout << spaces << scores << _label << scores << spaces;
-	legend << '[' << _label << "] " << *_goal << std::endl;
+	legend << '[' << _label << "] " << *_goal << '\n';
 }
 
 int TheoremProver::Node::maxDepth() const {
@@ -234,6 +234,9 @@ void TheoremProver::deduce() {
 void TheoremProver::trivial() {
 	assert(mode() == PROVING);
 	_dfs.pop_back();
+	if (mode() == DONE) {
+		std::cout << "Proof completed!\n";
+	}
 }
 
 void TheoremProver::justify() {
@@ -264,9 +267,9 @@ void TheoremProver::printTheorem() const {
 
 void TheoremProver::printTree() const {
 	assert(mode() != NOTHM);
-	std::cout << std::endl;
+	std::cout << '\n';
 	_root->printTree();
-	std::cout << std::endl;
+	std::cout << '\n';
 }
 
 void TheoremProver::printGoal() const {
@@ -282,7 +285,7 @@ void TheoremProver::printGivens() const {
 		n->printGivens(true);
 	}
 	if (empty) {
-		std::cout << "(no givens)" << std::endl;
+		std::cout << "(no givens)\n";
 	}
 }
 
