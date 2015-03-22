@@ -70,6 +70,9 @@ static bool dispatch(const StrVec& tokens, TheoremProver& tp) {
 				// - do these two overlap?
 				// - decompose goal / use givens
 				// - others?
+				// - options to NOT decompose, though it would be possible
+				// - proof by contradiction
+				// - triv (trivail) OR provide justification (string)
 			} else if (cmd == "thm") {
 				tp.printTheorem();
 			} else if (cmd == "given" || cmd == "givens") {

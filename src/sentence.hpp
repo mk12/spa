@@ -4,6 +4,7 @@
 #define SENTENCE_H
 
 #include <string>
+#include <vector>
 
 class Object;
 class Sentence;
@@ -53,10 +54,10 @@ public:
 	virtual void negate() = 0;
 
 	// Returns a the possible decompositions of the sentence (possibly none).
-	// virtual std::vector<Decomp> decompose() const = 0;
+	virtual std::vector<Decomp> decompose() const = 0;
 
 	// Returns the possible deductions from this sentence (possible none).
-	// virtual std::vector<Deduct> deduce() const = 0;
+	virtual std::vector<Deduct> deduce() const = 0;
 
 	// Prints a string representation of the sentence to the given stream.
 	virtual std::ostream& print(std::ostream& s) const = 0;
@@ -79,29 +80,13 @@ public:
 	Logical(Type t, Sentence* a, Sentence* b);
 
 	virtual ~Logical();
+	Logical* cloneSelf() const;
 	virtual Sentence* clone() const;
 	virtual Value value() const;
 	virtual void negate();
+	virtual std::vector<Decomp> decompose() const;
+	virtual std::vector<Deduct> deduce() const;
 	virtual std::ostream& print(std::ostream& s) const;
-
-	// FIXME: These three don't need to be public. They might not even need to
-	// be separate methods. Although contrapostive is both a decomposition and a
-	// deduction, so maybe it should stay separate.
-	// TODO: consider the visibility of all things currently declared public --
-	// especially the expand* methods.
-
-	// Assumes the type is IMPLIES. Changes the implication "A implies B" to the
-	// equivalent sentence "not B implies not A", known as the contrapositive.
-	void contrapositive();
-
-	// Assumes the type is IMPLIES. Swaps the hypothesis and the conclusion, so
-	// "A implies B" becomes "B implies A". The converse is not equivalent to
-	// the original sentence.
-	void converse();
-
-	// Assumes the type is IFF. Expands the sentence into and AND combining the
-	// forward implication and its converse. This is how equivalence is defined.
-	void expandIff();
 
 	// Returns the operation type specified by the string, or -1 otherwise.
 	static int getType(const std::string& s);
@@ -126,15 +111,13 @@ public:
 	Relation(Type t, bool positive, Object* a, Object* b);
 
 	virtual ~Relation();
+	Relation* cloneSelf() const;
 	virtual Sentence* clone() const;
 	virtual Value value() const;
 	virtual void negate();
+	virtual std::vector<Decomp> decompose() const;
+	virtual std::vector<Deduct> deduce() const;
 	virtual std::ostream& print(std::ostream& s) const;
-
-	// TODO: not so simple anymore
-	// Assumes the type is SUBSET. Expands the sentence into the sentence
-	// "forall x in A: x in B", which is the definition of the subset relation.
-	// Sentence* expandSubset();
 
 	// Returns the operation type specified by the string, or -1 otherwise.
 	static std::pair<int, bool> getType(const std::string& s);
@@ -162,9 +145,12 @@ public:
 	Quantified(Type t, Symbol* var, Set* domain, Sentence* body);
 
 	virtual ~Quantified();
+	Quantified* cloneSelf() const;
 	virtual Sentence* clone() const;
 	virtual Value value() const;
 	virtual void negate();
+	virtual std::vector<Decomp> decompose() const;
+	virtual std::vector<Deduct> deduce() const;
 	virtual std::ostream& print(std::ostream& s) const;
 
 	// Returns the quantifier type specified by the string, or -1 otherwise.

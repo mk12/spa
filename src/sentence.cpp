@@ -10,6 +10,21 @@
 #include <cassert>
 
 // =============================================================================
+//            Macros
+// =============================================================================
+
+// Adds a decomposition that only uses one child.
+#define DEC1(vec, s, given, goal) DEC2(vec, s, given, goal, nullptr, nullptr)
+
+// Adds a decomposition to the vector.
+#define DEC2(vec, s, gi1, go1, gi2, go2) do { \
+	vec.push_back({s, gi1, go1, gi2, go2}); \
+} while (0)
+
+// Add a deduction to the vector.
+#define DED(vec, hyp, conc) do { vec.push_back({hyp, conc}); } while (0)
+
+// =============================================================================
 //            Sentence
 // =============================================================================
 
@@ -17,6 +32,13 @@ Sentence::~Sentence() {}
 
 std::ostream& operator<<(std::ostream& stream, const Sentence& s) {
 	return s.print(stream);
+}
+
+// Convenience function for cloning and negating all at once.
+static Sentence* negClone(Sentence* s) {
+	Sentence* n = s->clone();
+	n->negate();
+	return n;
 }
 
 // =============================================================================
@@ -31,6 +53,10 @@ Logical::~Logical() {
 }
 
 Sentence* Logical::clone() const {
+	return cloneSelf();
+}
+
+Logical* Logical::cloneSelf() const {
 	return new Logical(_type, _a->clone(), _b->clone());
 }
 
@@ -69,10 +95,62 @@ void Logical::negate() {
 		_b->negate();
 		break;
 	case IFF:
-		expandIff();
+		_type = AND;
+		Logical* fwd = new Logical(IMPLIES, _a, _b);
+		Logical* bwd = new Logical(IMPLIES, _b->clone(), _a->clone());
+		_a = fwd;
+		_b = bwd;
 		negate();
 		break;
 	}
+}
+
+std::vector<Decomp> Logical::decompose() const {
+	std::vector<Decomp> vec;
+	switch (_type) {
+	case AND:
+		DEC2(vec, "separate", nullptr, _a->clone(), nullptr, _b->clone());
+		break;
+	case OR:
+		DEC1(vec, "first", negClone(_b), _a->clone());
+		DEC1(vec, "second", negClone(_a), _b->clone());
+		break;
+	case IMPLIES:
+		DEC1(vec, "direct", _a->clone(), _b->clone());
+		DEC1(vec, "contrapositive", negClone(_b), negClone(_a));
+		break;
+	case IFF:
+		Logical* fwd = new Logical(IMPLIES, _a->clone(), _b->clone());
+		Logical* bwd = new Logical(IMPLIES, _b->clone(), _a->clone());
+		DEC2(vec, "bidirectional", nullptr, fwd, nullptr, bwd);
+		break;
+	}
+	return vec;
+}
+
+std::vector<Deduct> Logical::deduce() const {
+	std::vector<Deduct> vec;
+	switch (_type) {
+	case AND:
+		DED(vec, nullptr, _a->clone());
+		DED(vec, nullptr, _b->clone());
+		break;
+	case OR:
+		DED(vec, negClone(_a), _b->clone());
+		DED(vec, negClone(_b), _a->clone());
+		break;
+	case IMPLIES:
+		DED(vec, _a->clone(), _b->clone());
+		DED(vec, negClone(_b), negClone(_a));
+		break;
+	case IFF:
+		Logical* fwd = new Logical(IMPLIES, _a->clone(), _b->clone());
+		Logical* bwd = new Logical(IMPLIES, _b->clone(), _a->clone());
+		DED(vec, nullptr, fwd);
+		DED(vec, nullptr, bwd);
+		break;
+	}
+	return vec;
 }
 
 std::ostream& Logical::print(std::ostream& s) const {
@@ -88,26 +166,6 @@ std::ostream& Logical::print(std::ostream& s) const {
 	s << ' ';
 	_b->print(s);
 	return s << ')';
-}
-
-void Logical::converse() {
-	assert(_type == IMPLIES);
-	std::swap(_a, _b);
-}
-
-void Logical::contrapositive() {
-	converse();
-	_a->negate();
-	_b->negate();
-}
-
-void Logical::expandIff() {
-	assert(_type == IFF);
-	_type = AND;
-	Logical* fwd = new Logical(IMPLIES, _a, _b);
-	Logical* bwd = new Logical(IMPLIES, _a->clone(), _b->clone());
-	_a = fwd;
-	_b = bwd;
 }
 
 int Logical::getType(const std::string& s) {
@@ -131,6 +189,10 @@ Relation::~Relation() {
 }
 
 Sentence* Relation::clone() const {
+	return cloneSelf();
+}
+
+Relation* Relation::cloneSelf() const {
 	return new Relation(_type, _want, _a->clone(), _b->clone());
 }
 
@@ -140,6 +202,58 @@ Sentence::Value Relation::value() const {
 
 void Relation::negate() {
 	_want = !_want;
+}
+
+std::vector<Decomp> Relation::decompose() const {
+	std::vector<Decomp> vec;
+	switch (_type) {
+	case SEQ:
+		if (_want) {
+			Relation* fwd = new Relation(SUB, true, _a->clone(), _b->clone());
+			Relation* bwd = new Relation(SUB, true, _b->clone(), _a->clone());
+			DEC2(vec, "mutual subsets", nullptr, fwd, nullptr, bwd);
+		}
+		break;
+	case SUB:
+		if (_want) {
+			Symbol* var = new Symbol('x');
+			DEC1(vec, "definition", nullptr, new Quantified(
+				Quantified::FORALL,
+				var,
+				dynamic_cast<Set*>(_a->clone()),
+				new Relation(Relation::IN, true, var->cloneSelf(), _b->clone()) 
+			));
+		};
+		break;
+	case DIV:
+		if (_want) {
+			Symbol* var = new Symbol('k');
+			DEC1(vec, "definition", nullptr, new Quantified(
+				Quantified::EXISTS,
+				var,
+				new SpecialSet(SpecialSet::INTEGERS),
+				new Relation(
+					Relation::EQ,
+					true,
+					new CompoundNumber(
+						CompoundNumber::MUL,
+						var->cloneSelf(),
+						dynamic_cast<Number*>(_a->clone())
+					),
+					_b->clone()
+				)
+			));
+		}
+		break;
+	default:
+		break;
+	}
+	return vec;
+}
+
+std::vector<Deduct> Relation::deduce() const {
+	std::vector<Deduct> vec;
+	return vec;
 }
 
 std::ostream& Relation::print(std::ostream& s) const {
@@ -173,20 +287,6 @@ std::ostream& Relation::print(std::ostream& s) const {
 	_b->print(s);
 	return s << ')';
 }
-
-/*
-Sentence* Relation::expandSubset() {
-	// FIXME: _want
-	assert(_type == SUBSET);
-	Symbol* var = new Symbol('x');
-	return new Quantified(
-		Quantified::FORALL,
-		var,
-		dynamic_cast<Set*>(_a->clone()),
-		new Relation(Relation::IN, var->cloneSelf(), _b->clone())
-	);
-}
-*/
 
 std::pair<int, bool> Relation::getType(const std::string& s) {
 	if (s == "=") return {EQ, true};
@@ -234,6 +334,10 @@ Quantified::~Quantified() {
 }
 
 Sentence* Quantified::clone() const {
+	return cloneSelf();
+}
+
+Quantified* Quantified::cloneSelf() const {
 	return new Quantified(_type, _var->cloneSelf(), _body->clone());
 }
 
@@ -244,6 +348,28 @@ Sentence::Value Quantified::value() const {
 void Quantified::negate() {
 	_type = static_cast<Type>(!_type);
 	_body->negate();
+}
+
+std::vector<Decomp> Quantified::decompose() const {
+	std::vector<Decomp> vec;
+	if (_type == FORALL) {
+		DEC1(vec, "general", nullptr, _body->clone());
+	}
+	return vec;
+}
+
+// TODO: differentiate universal & existential instantiation
+std::vector<Deduct> Quantified::deduce() const {
+	std::vector<Deduct> vec;
+	switch (_type) {
+	case FORALL:
+		DED(vec, nullptr, _body->clone());
+		break;
+	case EXISTS:
+		DED(vec, nullptr, _body->clone());
+		break;
+	}
+	return vec;
 }
 
 std::ostream& Quantified::print(std::ostream& s) const {
