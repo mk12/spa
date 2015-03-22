@@ -216,7 +216,24 @@ bool TheoremProver::hasTheorem() const {
 	return _root != nullptr;
 }
 
-bool TheoremProver::advance() const {
+void TheoremProver::decompose() const {
+}
+
+void TheoremProver::deduce() const {
+}
+
+void TheoremProver::printStatus() const {
+	if (hasTheorem()) {
+		std::cout << "\nTHEOREM\n";
+		printTheorem();
+		std::cout << "\nCURRENT GOAL\n";
+		printGoal();
+		std::cout << "\nGIVENS\n";
+		printGivens();
+		std::cout << std::endl;
+		std::cout << _dfs.size() << " goal(s) left to prove." << std::endl;
+		std::cout << std::endl;
+	}
 }
 
 void TheoremProver::printTheorem() const {
@@ -244,7 +261,9 @@ void TheoremProver::printGoal() const {
 
 void TheoremProver::printTree() const {
 	if (hasTheorem()) {
+		std::cout << std::endl;
 		_root->printTree();
+		std::cout << std::endl;
 	}
 }
 

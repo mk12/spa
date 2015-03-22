@@ -206,16 +206,15 @@ void Relation::negate() {
 
 std::vector<Decomp> Relation::decompose() const {
 	std::vector<Decomp> vec;
-	switch (_type) {
-	case SEQ:
-		if (_want) {
+	if (_want) {
+		switch (_type) {
+		case SEQ: {
 			Relation* fwd = new Relation(SUB, true, _a->clone(), _b->clone());
 			Relation* bwd = new Relation(SUB, true, _b->clone(), _a->clone());
 			DEC2(vec, "mutual subsets", nullptr, fwd, nullptr, bwd);
+			break;
 		}
-		break;
-	case SUB:
-		if (_want) {
+		case SUB: {
 			Symbol* var = new Symbol('x');
 			DEC1(vec, "definition", nullptr, new Quantified(
 				Quantified::FORALL,
@@ -223,10 +222,9 @@ std::vector<Decomp> Relation::decompose() const {
 				dynamic_cast<Set*>(_a->clone()),
 				new Relation(Relation::IN, true, var->cloneSelf(), _b->clone()) 
 			));
-		};
-		break;
-	case DIV:
-		if (_want) {
+			break;
+		}
+		case DIV: {
 			Symbol* var = new Symbol('k');
 			DEC1(vec, "definition", nullptr, new Quantified(
 				Quantified::EXISTS,
@@ -243,16 +241,35 @@ std::vector<Decomp> Relation::decompose() const {
 					_b->clone()
 				)
 			));
+			break;
 		}
-		break;
-	default:
-		break;
+		default:
+			break;
+		}
 	}
 	return vec;
 }
 
 std::vector<Deduct> Relation::deduce() const {
 	std::vector<Deduct> vec;
+	Relation* r;
+	if (_want) {
+		switch (_type) {
+		case EQ:
+			r = cloneSelf();
+			r->_type = LTE;
+			DED(vec, nullptr, r);
+			break;
+		case LT:
+			r = cloneSelf();
+			r->_type = EQ;
+			r->_want = false;
+			DED(vec, nullptr, r);
+			break;
+		default:
+			break;
+		}
+	}
 	return vec;
 }
 

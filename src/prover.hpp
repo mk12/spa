@@ -24,15 +24,20 @@ public:
 	// Returns true if a theorem is currently loaded.
 	bool hasTheorem() const;
 
-	// Attemps to decompose the current goal into subgoals. Prompts the user if
-	// there are multiple options. If successful, moves to the primary subgoal
-	// and returns true. If not possible, returns false.
-	bool advance() const;
+	// Attemps to decompose the current goal into subgoals, prompting the user
+	// to choose an option.
+	void decompose() const;
 
-	// Prints a string representation of the theorem (the ultimate goal being
-	// proved), the givens (facts that can be used to prove the goal), the goal
-	// (the current subgoal of the theorem), or the tree (structure used to
-	// decompose the theorem) to stdout. Does nothing if no theorem is loaded.
+	// Attempts to deduce a new given from the current givens, prompting the
+	// user to choose a possible deduction (or all).
+	void deduce() const;
+
+	// Prints the prover's status, a string representation of the theorem (the
+	// ultimate goal being proved), the givens (facts that can be used to prove
+	// the goal), the goal (the current subgoal of the theorem), or the tree
+	// (structure used to decompose the theorem) to stdout. Does nothing if no
+	// theorem is loaded.
+	void printStatus() const;
 	void printTheorem() const;
 	void printGivens() const;
 	void printGoal() const;

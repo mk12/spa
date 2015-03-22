@@ -25,7 +25,11 @@ namespace {
 	"help   -  show this help message\n"
 	"quit   -  quit the program\n"
 	"prove  -  set the theorem to prove\n"
-	"go     -  go to the next step\n"
+	"dec    -  decompose the current goal\n"
+	"ded    -  deduce from the current goal\n"
+	"triv   -  prove a trivial goal\n"
+	"just   -  prove a goal with justification\n"
+	"stat   -  show the overall status\n"
 	"thm    -  show the current theorem\n"
 	"given  -  show the current givens\n"
 	"goal   -  show the current goal\n"
@@ -56,23 +60,27 @@ static bool dispatch(const StrVec& tokens, TheoremProver& tp) {
 			error("expecting theorem");
 		} else if (cmd == "help") {
 			std::cout << help;
-		} else if (cmd == "go" || cmd == "thm" || cmd == "given"
-				|| cmd == "givens" || cmd == "goal" || cmd == "tree"
-				|| cmd == "print") {
+		} else if (cmd == "dec" || cmd == "ded" || cmd == "triv"
+				|| cmd == "just" || cmd == "stat" || cmd == "thm"
+				|| cmd == "given" || cmd == "givens" || cmd == "goal"
+				|| cmd == "tree" || cmd == "print") {
 			if (!tp.hasTheorem()) {
 				error("no theorem loaded");
 				return false;
 			}
-			if (cmd == "go") {
-				// TODO: is a single go command enough? 2 things...
-				// - decompose goal automatically or by option
-				// - deduce new given
-				// - do these two overlap?
-				// - decompose goal / use givens
-				// - others?
-				// - options to NOT decompose, though it would be possible
-				// - proof by contradiction
-				// - triv (trivail) OR provide justification (string)
+			if (cmd == "dec") {
+				// pick a decomposition option, or don't decompose
+				// or prove by contradictions
+			} else if (cmd == "ded") {
+				// list possible deductions
+				// choose one, or all
+				// or add your own, wiht justification/trivial?
+			} else if (cmd == "triv") {
+				// prove the current goal trivially
+			} else if (cmd == "just") {
+				// prove the current goal with a string of justification
+			} else if (cmd == "stat") {
+				tp.printStatus();
 			} else if (cmd == "thm") {
 				tp.printTheorem();
 			} else if (cmd == "given" || cmd == "givens") {
