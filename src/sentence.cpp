@@ -14,15 +14,51 @@
 // =============================================================================
 
 // Adds a decomposition that only uses one child.
-#define DEC1(vec, s, given, goal) DEC2(vec, s, given, goal, nullptr, nullptr)
+#define DEC1(vec, s, gi, go) do { \
+	vec.emplace_back(s, gi, go); \
+} while (0)
 
 // Adds a decomposition to the vector.
 #define DEC2(vec, s, gi1, go1, gi2, go2) do { \
-	vec.push_back({s, gi1, go1, gi2, go2}); \
+	vec.emplace_back(s, gi1, go1, gi2, go2); \
 } while (0)
 
 // Add a deduction to the vector.
-#define DED(vec, hyp, conc) do { vec.push_back({hyp, conc}); } while (0)
+#define DED(vec, hyp, conc) do { vec.emplace_back(hyp, conc); } while (0)
+
+// =============================================================================
+//            Decomp
+// =============================================================================
+
+Decomp::Decomp(std::string name, Sentence* givenA, Sentence* goalA,
+	Sentence* givenB, Sentence* goalB)
+	: _name(name), _givenA(givenA), _goalA(goalA), _givenB(givenB), _goalB(goalB) {}
+
+Decomp::Decomp(std::string name, Sentence* givenA, Sentence* goalA)
+	: _name(name), _givenA(givenA), _goalA(goalA), _givenB(nullptr), _goalB(nullptr)
+	{}
+
+void Decomp::print() const {
+	std::cout << _name;
+}
+
+void Decomp::free() {
+	delete _givenA;
+	delete _goalA;
+	delete _givenB;
+	delete _goalB;
+}
+
+// =============================================================================
+//            Deduct
+// =============================================================================
+
+Deduct::Deduct(Sentence* hyp, Sentence* conc) : _hyp(hyp), _conc(conc) {}
+
+Deduct::~Deduct() {
+	delete _hyp;
+	delete _conc;
+}
 
 // =============================================================================
 //            Sentence

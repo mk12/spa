@@ -14,20 +14,40 @@ class Symbol;
 // A decomp stores information about sentence decomposition. It breaks down a
 // parent sentence into one equivalent goal (A) or two subgoals (A and B). Each
 // subgoal can optionally include a given (a fact to be used in the proof).
-struct Decomp {
-	std::string name; // the type of decomposition
-	Sentence* givenA; // first given, or null
-	Sentence* goalA; // first goal
-	Sentence* givenB; // second given, or null
-	Sentence* goalB; // second goal, or null
+class Decomp {
+public:
+	Decomp(std::string name, Sentence* givenA, Sentence* goalA,
+		Sentence* givenB, Sentence* goalB);
+	Decomp(std::string name, Sentence* givenA, Sentence* givenB);
+	Decomp(Decomp&&) = default;
+	Decomp(const Decomp&) = default;
+
+	// Prints the name of this decomposition.
+	void print() const;
+
+	// Deletes all four of its sentences.
+	void free();
+
+	std::string _name; // the type of decomposition
+	Sentence* _givenA; // first given, or null
+	Sentence* _goalA; // first goal
+	Sentence* _givenB; // second given, or null
+	Sentence* _goalB; // second goal, or null
 };
 
 // A deduct stores information about sentence deduction. It consists of
 // conclusion (the thing being deduced) and an optional hypothesis, which is
 // required to be proved before assuming the conclusion.
-struct Deduct {
-	Sentence* hypothesis; // the requirement, or null
-	Sentence* conclusion; // the deduced sentence
+class Deduct {
+public:
+	Deduct(Sentence* hyp, Sentence* conc);
+	Deduct(Deduct&&) = default;
+	Deduct(const Deduct&) = delete;
+	~Deduct();
+
+private:
+	Sentence* _hyp; // the requirement, or null
+	Sentence* _conc; // the deduced sentence
 };
 
 // A sentence, or proposition, is a Boolean-valued formula with no free

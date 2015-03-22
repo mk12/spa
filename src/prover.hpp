@@ -59,6 +59,14 @@ private:
 	// Returns the node that we are currently "at" in the traversal.
 	Node* currentNode() const;
 
+	// Updates the lineage to go from the root to the current node, based on the
+	// most recent change to current node.
+	void updateLineage();
+
+	// Cleans up some resources. Intended to be called when the theorem prover
+	// transitions into the DONE mode.
+	void cleanUp();
+
 	Node* _root; // the root of the given/goal tree
 	std::vector<Node*> _dfs; // the stack used for depth-first traversal
 	std::vector<Node*> _lineage; // goes from root to the current node

@@ -9,8 +9,28 @@
 #include <ostream>
 #include <queue>
 #include <sstream>
+#include <string>
 
 #include <cassert>
+
+// =============================================================================
+//            Fancy printing
+// =============================================================================
+
+// Begins printing things in red.
+static void startRed(std::ostream& s) {
+	s << "\x1b[31m";
+}
+
+// Stops printing things in red.
+static void stopRed(std::ostream& s) {
+	s << "\x1b[0m";
+}
+
+// Prints a string underlined with newlines before and after.
+static void printUnderlined(const char* str) {
+	std::cout << "\n\x1b[4m" << str << "\x1b[0m\n";
+}
 
 // =============================================================================
 //            Node
@@ -35,12 +55,14 @@ public:
 	// the givens of the node.
 	~Node();
 
-	// Accessors for the given, goal, and children of the node.
+	// Accessors for the goal and the children of the node.
+	Sentence* goal() const { return _goal; }
 	Node* primaryChild() const { return _a; }
-	Node* secodaryChild() const { return _b; }
+	Node* secondaryChild() const { return _b; }
 
-	// Assumes this is a leaf node. Adds one or two children to the node.
-	void decompose(Node* a, Node* b = nullptr);
+	// Assumes this is a leaf node. Adds one or two children to the node via a
+	// decomp object.
+	void decompose(Decomp d);
 
 	// Adds a given to the node.
 	void deduce(Sentence* g);
@@ -49,17 +71,18 @@ public:
 	bool hasGivens() const;
 
 	// Prints the goal or the givens of the node to stdout, optionally including
-	// the node label as well.
+	// the node label as well (in a different colour).
 	void printGoal(bool label) const;
 	void printGivens(bool label) const;
 
-	// Pretty-prints the tree to stdout.
-	void printTree() const;
+	// Pretty-prints the tree to stdout. If the current node is provided, it
+	// will be made distinct by printing in a different colour.
+	void printTree(Node* current = nullptr) const;
 
 private:
 	// Prints a section of the ASCII tree, and outputs the legend information of
-	// this node to the given stream.
-	void printHelp(int indent, std::ostream& legend) const;
+	// this node to the given stream. Uses a different colour is col is true.
+	void printHelp(int indent, std::ostream& legend, bool col) const;
 
 	// Calculates the maximum depth of this tree.
 	int maxDepth() const;
@@ -94,11 +117,13 @@ TheoremProver::Node::~Node() {
 	delete _b;
 }
 
-void TheoremProver::Node::decompose(Node* a, Node* b) {
+void TheoremProver::Node::decompose(Decomp d) {
 	assert(_a == nullptr);
 	assert(_b == nullptr);
-	_a = a;
-	_b = b;
+	_a = new Node(d._goalA, d._givenA);
+	if (d._goalB != nullptr) {
+		_b = new Node(d._goalB, d._givenB);
+	}
 }
 
 void TheoremProver::Node::deduce(Sentence* g) {
@@ -113,7 +138,10 @@ bool TheoremProver::Node::hasGivens() const {
 void TheoremProver::Node::printGoal(bool label) const {
 	assert(_goal != nullptr);
 	if (label) {
-		std::cout << '[' << _label << "] ";
+		startRed(std::cout);
+		std::cout << '[' << _label << ']';
+		stopRed(std::cout);
+		std::cout << ' ';
 	}
 	std::cout << *_goal << '\n';
 }
@@ -137,7 +165,7 @@ void TheoremProver::Node::printGivens(bool label) const {
 	}
 }
 
-void TheoremProver::Node::printTree() const {
+void TheoremProver::Node::printTree(Node* current) const {
 	int depth = maxDepth();
 	// Compute the indent level for the first row. By inspection I discovered
 	// the pattern to be 2^(n-2) spaces followed by 2^(n-2)-1 underscores, where
@@ -156,36 +184,129 @@ void TheoremProver::Node::printTree() const {
 	std::queue<const Node*> queue;
 	queue.push(this);
 	while (!queue.empty()) {
+		bool allNull = true;
 		auto sz = queue.size();
+		std::stringstream slashes;
 		for (unsigned int i = 0; i < sz; ++i) {
 			const Node* n = queue.front();
 			queue.pop();
-			n->printHelp(indent, legend);
-			if (n->_a != nullptr) {
-				queue.push(n->_a);
+			std::string spaces1(
+				static_cast<unsigned int>(std::max(0, indent - 1)),
+				' '
+			);
+			std::string spaces2(
+				static_cast<unsigned int>(std::max(0, indent * 2 - 1)),
+				' '
+			);
+			char leftp = ' ';
+			char rightp = ' ';
+			if (n != nullptr) {
+				if (n->_a != nullptr) leftp = '/';
+				if (n->_b != nullptr) rightp = '\\';
 			}
-			if (n->_b != nullptr) {
+			slashes << spaces1 << leftp << spaces2 << rightp << spaces1;
+			if (n == nullptr) {
+				std::cout << std::string(
+					static_cast<unsigned int>(1 + std::max(0, 4 * indent - 2)),
+					' '
+				);
+				// Push nulls to ensure correct spacing.
+				// (This is why we need to break on allNull.)
+				queue.push(nullptr);
+				queue.push(nullptr);
+			} else {
+				n->printHelp(indent, legend, n == current);
+				queue.push(n->_a);
 				queue.push(n->_b);
+				if (n->_a != nullptr || n->_b != nullptr) {
+					allNull = false;
+				}
+			}
+			if (i != sz - 1) {
+				std::cout << ' ';
+				slashes << ' ';
 			}
 		}
 		indent /= 2;
 		std::cout << '\n';
+		if (allNull) {
+			break;
+		} else {
+			std::cout << slashes.str() << '\n';
+		}
 	}
 	std::cout << '\n' << legend.str();
 }
 
-void TheoremProver::Node::printHelp(int indent, std::ostream& legend) const {
-	unsigned int ind = static_cast<unsigned int>(indent);
-	std::string spaces(ind, ' ');
-	std::string scores(std::max(0u, ind), '_');
-	std::cout << spaces << scores << _label << scores << spaces;
-	legend << '[' << _label << "] " << *_goal << '\n';
+void TheoremProver::Node::printHelp(int indent, std::ostream& legend, bool col)
+		const {
+	unsigned int n_sp = static_cast<unsigned int>(indent);
+	unsigned int n_us = static_cast<unsigned int>(std::max(0, indent - 1));
+	std::string spaces(n_sp, ' ');
+	std::string scoresl(n_us, (_a == nullptr) ? ' ' : '_');
+	std::string scoresr(n_us, (_b == nullptr) ? ' ' : '_');
+	std::cout << spaces << scoresl;
+	if (col) {
+		startRed(std::cout);
+		startRed(legend);
+	}
+	std::cout << _label;
+	legend << '[' << _label << ']';
+	if (col) {
+		stopRed(std::cout);
+		stopRed(legend);
+	}
+	std::cout << scoresr << spaces;
+	legend << ' ' << *_goal << '\n';
 }
 
 int TheoremProver::Node::maxDepth() const {
 	int da = (_a == nullptr) ? 0 : _a->maxDepth();
 	int db = (_b == nullptr) ? 0 : _b->maxDepth();
 	return 1 + std::max(da, db);
+}
+
+// =============================================================================
+//            Index parsing
+// =============================================================================
+
+namespace {
+	const char* bad_index = "Invalid index.\n";
+}
+
+// Prompts the user to enter an integer between lo and hi (inclusive). Prompts
+// repeatedly until valid input is parsed. Returns the integer.
+static int readIndex(int lo, int hi) {
+	int option;
+	for(;;) {
+		std::cout << "Enter the option index: ";
+		std::string line;
+
+		// Make sure Ctrl-D is handled properly.
+		if (!getline(std::cin, line)) {
+			std::cout << '\n';
+			exit(1);
+		}
+
+		// Try again if anything goes wrong.
+		try {
+			option = std::stoi(line);
+		} catch (const std::invalid_argument& e) {
+			(void)e;
+			std::cerr << bad_index;
+			continue;
+		} catch (const std::out_of_range& e) {
+			(void)e;
+			std::cerr << bad_index;
+			continue;
+		}
+		if (option < lo || option > hi) {
+			std::cerr << bad_index;
+			continue;
+		}
+		break;
+	}
+	return option;
 }
 
 // =============================================================================
@@ -198,17 +319,22 @@ TheoremProver::~TheoremProver() {
 	delete _root;
 }
 
-void TheoremProver::setTheorem(Sentence* s) {
-	delete _root;
+void TheoremProver::cleanUp() {
 	// This is why we are using vectors instead of stacks (clear method).
 	_dfs.clear();
 	_lineage.clear();
+}
+
+void TheoremProver::setTheorem(Sentence* s) {
+	delete _root;
+	cleanUp();
 	if (s == nullptr) {
 		_root = nullptr;
 	} else {
 		_root = new Node(s);
 		_dfs.push_back(_root);
 		_lineage.push_back(_root);
+		printGoal();
 	}
 }
 
@@ -220,8 +346,50 @@ TheoremProver::Mode TheoremProver::mode() const {
 
 void TheoremProver::decompose() {
 	assert(mode() == PROVING);
-	// pick a decomposition option, or don't decompose
-	// or prove by contradictions
+	std::vector<Decomp> vec = currentNode()->goal()->decompose();
+
+	if (vec.empty()) {
+		std::cout << "This goal cannot be decomposed.\n";
+		return;
+	}
+
+	// Print the indexed options.
+	std::cout << "Choose a decomposition option.\n";
+	std::cout << "(0) abort\n";
+	int i = 1;
+	for (const Decomp& d: vec) {
+		std::cout << '(' << i++ << ") ";
+		d.print();
+		std::cout << '\n';
+	}
+
+	// FIXME: The following is pretty wasteful. It is only necessary to do it
+	// this way for deduction, since each hypothesis needs to be checked and
+	// each conclusion needs to be displayed.
+
+	// Get the index, and delete the unused decomps.
+	int option = readIndex(0, static_cast<int>(vec.size()));
+	for (int j = 0; j < static_cast<int>(vec.size()); j++) {
+		if (j != option - 1) {
+			vec[static_cast<size_t>(j)].free();
+		}
+	}
+	if (option == 0) {
+		std::cout << "Decomposition aborted.\n";
+		return;
+	}
+
+	// Add it to the tree.
+	Node* n = currentNode();
+	n->decompose(vec[static_cast<size_t>(option - 1)]);
+	_dfs.pop_back();
+	if (n->secondaryChild() != nullptr) {
+		_dfs.push_back(n->secondaryChild());
+	}
+	_dfs.push_back(n->primaryChild());
+	_lineage.push_back(n->primaryChild());
+	std::cout << "New goal: ";
+	printGoal();
 }
 
 void TheoremProver::deduce() {
@@ -236,23 +404,29 @@ void TheoremProver::trivial() {
 	_dfs.pop_back();
 	if (mode() == DONE) {
 		std::cout << "Proof completed!\n";
+		cleanUp();
+	} else {
+		updateLineage();
+		std::cout << "Goal proved.\nNew goal: ";
+		printGoal();
 	}
 }
 
 void TheoremProver::justify() {
 	assert(mode() == PROVING);
 	_dfs.pop_back();
+	// TODO: Implement me!
 }
 
 void TheoremProver::printStatus() const {
 	Mode m = mode();
 	assert(m != NOTHM);
-	std::cout << "\n\x1b[4mTHEOREM\x1b[0m\n";
+	printUnderlined("THEOREM");
 	printTheorem();
 	if (m == PROVING) {
-		std::cout << "\n\x1b[4mCURRENT GOAL\x1b[0m\n";
+		printUnderlined("CURRENT GOAL");
 		printGoal();
-		std::cout << "\n\x1b[4mGIVENS\x1b[0m\n";
+		printUnderlined("GIVENS");
 		printGivens();
 		std::cout << '\n' << _dfs.size() << " goal(s) left to prove.\n\n";
 	} else if (m == DONE) {
@@ -266,9 +440,14 @@ void TheoremProver::printTheorem() const {
 }
 
 void TheoremProver::printTree() const {
-	assert(mode() != NOTHM);
+	Mode m = mode();
+	assert(m != NOTHM);
 	std::cout << '\n';
-	_root->printTree();
+	if (m == PROVING) {
+		_root->printTree(currentNode());
+	} else {
+		_root->printTree();
+	}
 	std::cout << '\n';
 }
 
@@ -281,7 +460,7 @@ void TheoremProver::printGivens() const {
 	assert(mode() == PROVING);
 	bool empty = true;
 	for (const Node* n: _lineage) {
-		empty = empty || n->hasGivens();
+		empty = empty && !n->hasGivens();
 		n->printGivens(true);
 	}
 	if (empty) {
@@ -292,4 +471,14 @@ void TheoremProver::printGivens() const {
 TheoremProver::Node* TheoremProver::currentNode() const {
 	assert(mode() == PROVING);
 	return _dfs.back();
+}
+
+void TheoremProver::updateLineage() {
+	Node* c = currentNode();
+	while (!_lineage.empty()
+			&& _lineage.back()->primaryChild() != c
+			&& _lineage.back()->secondaryChild() != c) {
+		_lineage.pop_back();
+	}
+	_lineage.push_back(c);
 }
