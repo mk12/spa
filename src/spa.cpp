@@ -11,7 +11,7 @@
 #include <cassert>
 
 namespace {
-	const char* prompt = "spa> ";
+	const char* prompt = "\x1b[1;35mspa>\x1b[0m ";
 
 	const char* header =
 	" _____   _____   _____\n"

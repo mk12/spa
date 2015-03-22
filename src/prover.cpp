@@ -233,27 +233,27 @@ void TheoremProver::deduce() {
 
 void TheoremProver::trivial() {
 	assert(mode() == PROVING);
+	_dfs.pop_back();
 }
 
 void TheoremProver::justify() {
 	assert(mode() == PROVING);
+	_dfs.pop_back();
 }
 
 void TheoremProver::printStatus() const {
 	Mode m = mode();
 	assert(m != NOTHM);
-	std::cout << "\nTHEOREM\n";
+	std::cout << "\n\x1b[4mTHEOREM\x1b[0m\n";
 	printTheorem();
 	if (m == PROVING) {
-		std::cout << "\nCURRENT GOAL\n";
+		std::cout << "\n\x1b[4mCURRENT GOAL\x1b[0m\n";
 		printGoal();
-		std::cout << "\nGIVENS\n";
+		std::cout << "\n\x1b[4mGIVENS\x1b[0m\n";
 		printGivens();
-		std::cout << std::endl;
-		std::cout << _dfs.size() << " goal(s) left to prove." << std::endl;
-		std::cout << std::endl;
+		std::cout << '\n' << _dfs.size() << " goal(s) left to prove.\n\n";
 	} else if (m == DONE) {
-		std::cout << "The proof is complete." << std::endl;
+		std::cout << "\nThe proof is complete.\n\n";
 	}
 }
 
@@ -287,6 +287,6 @@ void TheoremProver::printGivens() const {
 }
 
 TheoremProver::Node* TheoremProver::currentNode() const {
-	assert(hasTheorem() && notFinished());
+	assert(mode() == PROVING);
 	return _dfs.back();
 }
