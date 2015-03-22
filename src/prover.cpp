@@ -212,20 +212,39 @@ void TheoremProver::setTheorem(Sentence* s) {
 	}
 }
 
-bool TheoremProver::hasTheorem() const {
-	return _root != nullptr;
+TheoremProver::Mode TheoremProver::mode() const {
+	if (_root == nullptr) return NOTHM;
+	if (_dfs.empty()) return DONE;
+	return PROVING;
 }
 
-void TheoremProver::decompose() const {
+void TheoremProver::decompose() {
+	assert(mode() == PROVING);
+	// pick a decomposition option, or don't decompose
+	// or prove by contradictions
 }
 
-void TheoremProver::deduce() const {
+void TheoremProver::deduce() {
+	assert(mode() == PROVING);
+	// list possible deductions
+	// choose one, or all
+	// or add your own, wiht justification/trivial?
+}
+
+void TheoremProver::trivial() {
+	assert(mode() == PROVING);
+}
+
+void TheoremProver::justify() {
+	assert(mode() == PROVING);
 }
 
 void TheoremProver::printStatus() const {
-	if (hasTheorem()) {
-		std::cout << "\nTHEOREM\n";
-		printTheorem();
+	Mode m = mode();
+	assert(m != NOTHM);
+	std::cout << "\nTHEOREM\n";
+	printTheorem();
+	if (m == PROVING) {
 		std::cout << "\nCURRENT GOAL\n";
 		printGoal();
 		std::cout << "\nGIVENS\n";
@@ -233,16 +252,30 @@ void TheoremProver::printStatus() const {
 		std::cout << std::endl;
 		std::cout << _dfs.size() << " goal(s) left to prove." << std::endl;
 		std::cout << std::endl;
+	} else if (m == DONE) {
+		std::cout << "The proof is complete." << std::endl;
 	}
 }
 
 void TheoremProver::printTheorem() const {
-	if (hasTheorem()) {
-		_root->printGoal(false);
-	}
+	assert(mode() != NOTHM);
+	_root->printGoal(false);
+}
+
+void TheoremProver::printTree() const {
+	assert(mode() != NOTHM);
+	std::cout << std::endl;
+	_root->printTree();
+	std::cout << std::endl;
+}
+
+void TheoremProver::printGoal() const {
+	assert(mode() == PROVING);
+	currentNode()->printGoal(true);
 }
 
 void TheoremProver::printGivens() const {
+	assert(mode() == PROVING);
 	bool empty = true;
 	for (const Node* n: _lineage) {
 		empty = empty || n->hasGivens();
@@ -253,21 +286,7 @@ void TheoremProver::printGivens() const {
 	}
 }
 
-void TheoremProver::printGoal() const {
-	if (hasTheorem()) {
-		currentNode()->printGoal(true);
-	}
-}
-
-void TheoremProver::printTree() const {
-	if (hasTheorem()) {
-		std::cout << std::endl;
-		_root->printTree();
-		std::cout << std::endl;
-	}
-}
-
 TheoremProver::Node* TheoremProver::currentNode() const {
-	assert(_root != nullptr);
+	assert(hasTheorem() && notFinished());
 	return _dfs.back();
 }

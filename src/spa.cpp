@@ -37,6 +37,7 @@ namespace {
 	"print  -  print the formal proof\n\n";
 
 	const char* bad_cmd = "invalid command";
+	const char* no_thm = "no theorem loaded";
 }
 
 // Prints an error message to stderr.
@@ -56,41 +57,50 @@ static bool dispatch(const StrVec& tokens, TheoremProver& tp) {
 		if (cmd == "quit" || cmd == "exit") {
 			return true;
 		}
+		TheoremProver::Mode m = tp.mode();
 		if (cmd == "prove") {
 			error("expecting theorem");
 		} else if (cmd == "help") {
 			std::cout << help;
 		} else if (cmd == "dec" || cmd == "ded" || cmd == "triv"
-				|| cmd == "just" || cmd == "stat" || cmd == "thm"
-				|| cmd == "given" || cmd == "givens" || cmd == "goal"
-				|| cmd == "tree" || cmd == "print") {
-			if (!tp.hasTheorem()) {
-				error("no theorem loaded");
+				|| cmd == "just" || cmd == "given" || cmd == "givens"
+				|| cmd == "goal") {
+			if (m == TheoremProver::NOTHM) {
+				error(no_thm);
+				return false;
+			}
+			if (m == TheoremProver::DONE) {
+				error("the proof is complete");
 				return false;
 			}
 			if (cmd == "dec") {
-				// pick a decomposition option, or don't decompose
-				// or prove by contradictions
+				tp.decompose();
 			} else if (cmd == "ded") {
-				// list possible deductions
-				// choose one, or all
-				// or add your own, wiht justification/trivial?
+				tp.deduce();
 			} else if (cmd == "triv") {
-				// prove the current goal trivially
+				tp.trivial();
 			} else if (cmd == "just") {
-				// prove the current goal with a string of justification
-			} else if (cmd == "stat") {
-				tp.printStatus();
-			} else if (cmd == "thm") {
-				tp.printTheorem();
+				tp.justify();
 			} else if (cmd == "given" || cmd == "givens") {
 				tp.printGivens();
 			} else if (cmd == "goal") {
 				tp.printGoal();
+			}
+		} else if (cmd == "stat" || cmd == "thm" || cmd == "tree"
+				|| cmd == "print") {
+			if (m == TheoremProver::NOTHM) {
+				error(no_thm);
+				return false;
+			}
+			if (cmd == "stat") {
+				tp.printStatus();
+			} else if (cmd == "thm") {
+				tp.printTheorem();
 			} else if (cmd == "tree") {
 				tp.printTree();
 			} else if (cmd == "print") {
-				// TODO: should I get rid of this?
+				// TODO: should I get rid of this? A: No.
+				// this can print theorem in progress with "..."
 			}
 		} else {
 			error(bad_cmd);

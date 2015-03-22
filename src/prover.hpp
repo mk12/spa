@@ -21,27 +21,37 @@ public:
 	// has the effect of clearing the theorem.
 	void setTheorem(Sentence* s);
 
-	// Returns true if a theorem is currently loaded.
-	bool hasTheorem() const;
+	// Returns the current mode of the theorem prover. It begins at NOTHM,
+	// becomes PROVING once a theorem is loaded, and switches to DONE once the
+	// proof is complete.
+	enum Mode { NOTHM, PROVING, DONE };
+	Mode mode() const;
 
-	// Attemps to decompose the current goal into subgoals, prompting the user
-	// to choose an option.
-	void decompose() const;
+	// Assumes PROVING mode. Attemps to decompose the current goal into
+	// subgoals, prompting the user to choose an option.
+	void decompose();
 
-	// Attempts to deduce a new given from the current givens, prompting the
-	// user to choose a possible deduction (or all).
-	void deduce() const;
+	// Assume PROVING mode. Attempts to deduce a new given from the current
+	// givens, prompting the user to choose a possible deduction (or all).
+	void deduce();
 
-	// Prints the prover's status, a string representation of the theorem (the
-	// ultimate goal being proved), the givens (facts that can be used to prove
-	// the goal), the goal (the current subgoal of the theorem), or the tree
-	// (structure used to decompose the theorem) to stdout. Does nothing if no
-	// theorem is loaded.
+	// Prove the current goal by assuming it is trivial.
+	void trivial();
+
+	// Prompt the user to provide reasoning in words to prove the current goal.
+	void justify();
+
+	// Assumes PROVING mode or DONE mode. Prints the status of the theorem
+	// prover (mode, theorem, goal, givens, subgoals left), the theorem being
+	// proved, or the tree structure used to decompose the theorem.
 	void printStatus() const;
 	void printTheorem() const;
-	void printGivens() const;
-	void printGoal() const;
 	void printTree() const;
+
+	// Assumes PROVING mode. Prints the goal (the current subgoal of the
+	// theorem) or the givens (facts that can be used to prove the goal).
+	void printGoal() const;
+	void printGivens() const;
 
 private:
 	class Node;
