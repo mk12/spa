@@ -55,8 +55,9 @@ public:
 	// the givens of the node.
 	~Node();
 
-	// Accessors for the goal and the children of the node.
+	// Accessors for the goal, givens, and children of the node.
 	Sentence* goal() const { return _goal; }
+	std::vector<Sentence*> givens() const { return _givens; }
 	Node* primaryChild() const { return _a; }
 	Node* secondaryChild() const { return _b; }
 
@@ -394,9 +395,57 @@ void TheoremProver::decompose() {
 
 void TheoremProver::deduce() {
 	assert(mode() == PROVING);
-	// list possible deductions
-	// choose one, or all
-	// or add your own, wiht justification/trivial?
+	std::vector<Deduct> vec;
+	for (const Node* n: _lineage) {
+		for (const Sentence* s: n->givens()) {
+			std::vector<Deduct> ds = s->deduce();
+			vec.insert(vec.end(), ds.begin(), ds.end());
+		}
+	}
+
+	if (vec.empty()) {
+		std::cout << "No deductions can be made.\n";
+		return;
+	}
+
+	// TODO: Filter out failed hypotheses.
+	// TODO: Avoid duplicate givens.
+
+	std::cout << "Choose a sentence to deduce.\n";
+	std::cout << "(0) abort\n";
+	int i = 1;
+	for (const Deduct& d: vec) {
+		std::cout << '(' << i++ << ") ";
+		d.print();
+		std::cout << '\n';
+	}
+	std::cout << '(' << i << ") all of the above\n";
+
+	int sz = static_cast<int>(vec.size());
+	int option = readIndex(0, sz + 1);
+	if (option == sz + 1) {
+		Node* n = currentNode();
+		for (const Deduct& d: vec) {
+			delete d._hyp;
+			n->deduce(d._conc);
+		}
+		std::cout << "Deduced " << sz << " sentence(s).\n";
+		return;
+	}
+	for (int j = 0; j < static_cast<int>(vec.size()); j++) {
+		if (j != option - 1) {
+			vec[static_cast<size_t>(j)].free();
+		}
+	}
+	if (option == 0) {
+		std::cout << "Decomposition aborted.\n";
+		return;
+	}
+	Node* n = currentNode();
+	Deduct chosen = vec[static_cast<size_t>(option - 1)];
+	delete chosen._hyp;
+	n->deduce(chosen._conc);
+	std::cout << "Deduction successful.\n";
 }
 
 void TheoremProver::trivial() {
@@ -414,8 +463,17 @@ void TheoremProver::trivial() {
 
 void TheoremProver::justify() {
 	assert(mode() == PROVING);
-	_dfs.pop_back();
-	// TODO: Implement me!
+	std::cout << "Provide justification (return twice to finish):\n";
+	std::string line;
+	for (;;) {
+		if (!getline(std::cin, line)) {
+			// Make sure Ctrl-D is handled properly.
+			std::cout << '\n';
+			exit(1);
+		}
+		if (line == "") break;
+	}
+	trivial();
 }
 
 void TheoremProver::printStatus() const {

@@ -55,9 +55,13 @@ void Decomp::free() {
 
 Deduct::Deduct(Sentence* hyp, Sentence* conc) : _hyp(hyp), _conc(conc) {}
 
-Deduct::~Deduct() {
+void Deduct::free() {
 	delete _hyp;
 	delete _conc;
+}
+
+void Deduct::print() const {
+	std::cout << *_conc;
 }
 
 // =============================================================================

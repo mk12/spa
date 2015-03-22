@@ -19,8 +19,6 @@ public:
 	Decomp(std::string name, Sentence* givenA, Sentence* goalA,
 		Sentence* givenB, Sentence* goalB);
 	Decomp(std::string name, Sentence* givenA, Sentence* givenB);
-	Decomp(Decomp&&) = default;
-	Decomp(const Decomp&) = default;
 
 	// Prints the name of this decomposition.
 	void print() const;
@@ -41,11 +39,13 @@ public:
 class Deduct {
 public:
 	Deduct(Sentence* hyp, Sentence* conc);
-	Deduct(Deduct&&) = default;
-	Deduct(const Deduct&) = delete;
-	~Deduct();
 
-private:
+	// Prints the conclusion of this deduction.
+	void print() const;
+
+	// Deletes both of its sentences.
+	void free();
+
 	Sentence* _hyp; // the requirement, or null
 	Sentence* _conc; // the deduced sentence
 };

@@ -33,8 +33,7 @@ namespace {
 	"thm    -  show the current theorem\n"
 	"given  -  show the current givens\n"
 	"goal   -  show the current goal\n"
-	"tree   -  show the entire proof tree\n"
-	"print  -  print the formal proof\n\n";
+	"tree   -  show the entire proof tree\n\n";
 
 	const char* bad_cmd = "invalid command";
 	const char* no_thm = "no theorem loaded";
@@ -86,8 +85,7 @@ static bool dispatch(const StrVec& tokens, TheoremProver& tp) {
 			} else if (cmd == "goal") {
 				tp.printGoal();
 			}
-		} else if (cmd == "stat" || cmd == "thm" || cmd == "tree"
-				|| cmd == "print") {
+		} else if (cmd == "stat" || cmd == "thm" || cmd == "tree") {
 			if (m == TheoremProver::NOTHM) {
 				error(no_thm);
 				return false;
@@ -98,9 +96,6 @@ static bool dispatch(const StrVec& tokens, TheoremProver& tp) {
 				tp.printTheorem();
 			} else if (cmd == "tree") {
 				tp.printTree();
-			} else if (cmd == "print") {
-				// TODO: should I get rid of this? A: No.
-				// this can print theorem in progress with "..."
 			}
 		} else {
 			error(bad_cmd);
