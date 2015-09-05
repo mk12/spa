@@ -72,6 +72,8 @@ static bool dispatch(const StrVec& tokens, TheoremProver& tp) {
 				error("the proof is complete");
 				return false;
 			}
+			// TODO: maintain map of variables, and what is known about them
+			// (value or domain).
 			if (cmd == "dec") {
 				tp.decompose();
 			} else if (cmd == "ded") {

@@ -23,6 +23,8 @@ public:
 	// pointer, which is sometimes used directly to avoid dynamic casting.
 	virtual Object* clone() const = 0;
 
+	// virtual bool equal(Object* other) const = 0;
+
 	// Prints a string representation of the object to the given stream.
 	virtual std::ostream& print(std::ostream& s) const = 0;
 	friend std::ostream& operator<<(std::ostream& stream, const Object& obj);
