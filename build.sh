@@ -8,7 +8,7 @@ name=$(basename "$0")
 usage="usage: $name [-h] [-t] [-d]"
 
 # Compiler and common options.
-CC=clang++
+cxx=${CXX:-clang++}
 options='-std=c++11 -Weverything -pedantic -Wno-padded -Wno-c++98-compat'
 dist_opts='-DNDEBUG -Oz'
 debug_opts='-g'
@@ -17,8 +17,8 @@ debug_opts='-g'
 src_dir='src'
 tst_dir='tests'
 bin_dir='dist'
-target='spa'
-tst_target='test'
+output='spa'
+tst_output='test'
 main_file="$src_dir/spa.cpp"
 
 # Search for source files.
@@ -27,12 +27,12 @@ tst_files=$(find $tst_dir -type f -name *.cpp)
 
 compile() {
 	mkdir -p $bin_dir
-	$CC $options $1 -lreadline -o $bin_dir/$target $main_file $src_files
+	$cxx $options $1 -lreadline -o $bin_dir/$output $main_file $src_files
 }
 
 compile_tests() {
 	mkdir -p $bin_dir
-	$CC $options -o $bin_dir/$tst_target $src_files $tst_files
+	$cxx $options -o $bin_dir/$tst_output $src_files $tst_files
 }
 
 error_msg() {
@@ -40,9 +40,9 @@ error_msg() {
 	exit 1
 }
 
-if (( $# == 0 )); then
+if (($# == 0)); then
 	compile $dist_opts
-elif (( $# == 1 )); then
+elif (($# == 1)); then
 	if [[ $1 == '-h' || $1 == '--help' ]]; then
 		echo "$usage"
 	elif [[ $1 == '-t' || $1 == '--test' ]]; then
